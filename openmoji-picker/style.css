@@ -1,0 +1,10 @@
+
+.openmoji{
+    height: 1em;
+    transform: translateY(0.19em) scale(1.3);
+}
+
+.openmoji-smaller{
+    transform: translateY(0.19em) scale(1.05);
+}
+
