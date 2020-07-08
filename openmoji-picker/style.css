@@ -8,3 +8,9 @@
     transform: translateY(0.19em) scale(1.05);
 }
 
+.openmoji-editable{
+    padding: 2px 8px;
+    border-style: solid;
+    border-color: grey;
+    border-width: 1px;
+}
