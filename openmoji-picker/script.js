@@ -1,4 +1,28 @@
 
+function getCaretCharacterOffsetWithin(element) {
+    var caretOffset = 0;
+    var doc = element.ownerDocument || element.document;
+    var win = doc.defaultView || doc.parentWindow;
+    var sel;
+    if (typeof win.getSelection != "undefined") {
+        sel = win.getSelection();
+        if (sel.rangeCount > 0) {
+            var range = win.getSelection().getRangeAt(0);
+            var preCaretRange = range.cloneRange();
+            preCaretRange.selectNodeContents(element);
+            preCaretRange.setEnd(range.endContainer, range.endOffset);
+            caretOffset = preCaretRange.toString().length;
+        }
+    } else if ( (sel = doc.selection) && sel.type != "Control") {
+        var textRange = sel.createRange();
+        var preCaretTextRange = doc.body.createTextRange();
+        preCaretTextRange.moveToElementText(element);
+        preCaretTextRange.setEndPoint("EndToEnd", textRange);
+        caretOffset = preCaretTextRange.text.length;
+    }
+    return caretOffset;
+}
+
 var OpenMoji = {
 
     Converter : class{
@@ -11,8 +35,10 @@ var OpenMoji = {
          * - jsonUrl: the path at which to find the json file with all the data about the available openmoji emojis; defaults to "openmoji/data/openmoji.json"
          * - keepShorthands: set to false to convert text back to unicode emojis when calling `emojisToText` or when users copy and paste text; defaults to true
          * - baseEmojiUrl: the path at which to find all the different OpenMoji svg files, including trailing slash; defaults to "openmoji/color/svg/"
+         * - editableClassName: the html class to use on editable content; defaults to "openmoji-editable"
          */
         constructor(settings){
+            settings = settings ?? {};
 
             this.settings = settings;
 
@@ -36,6 +62,22 @@ var OpenMoji = {
                     this.__futureData.then(() => {
                         resolve(this.__data);
                     });
+                });
+            }
+
+            /// Fired once DOM becomes interactable
+            let onready = () => {
+                /// Look for any openmoji-editable elements and instantiate them as editable openmoji fields
+                let editables = document.getElementsByClassName(settings.editableClassName ?? 'openmoji-editable');
+                [...editables].forEach(editable => {
+                    this.bindEditable(editable);
+                });
+            };
+            if(document.readyState === "complete" || document.readyState === "interactive") {
+                onready();
+            }else{
+                window.addEventListener('DOMContentLoaded', () => {
+                    onready();
                 });
             }
         }
@@ -70,15 +112,15 @@ var OpenMoji = {
 
         /// Converts some text containing unicode emojis or :shorthand-notations: to use svgs from openmoji instead
         textToEmojis(element){
+            this.emojisToText(element);
             let input = element.innerHTML;
-            console.log(element.selectionStart);
             if(element.tagName.toLowerCase() == "input"){
                 console.error("Cannot convert text to emojis within an <input> field; use contenteditable instead!");
                 return;
             }
-            console.log("Converting [" + input + "] with type " + element.tagName.toLowerCase());
             return new Promise((resolve) => {
                 this.__getData().then((data) => {
+                    // replace emojis and :shorthands: in text
                     for(let i = data.length-1; i >= 0; --i){
                         data[i].index = i;
                         let emoji = this.makeEmojiImage(data[i]);
@@ -86,7 +128,9 @@ var OpenMoji = {
                         input = input.replaceAll(shorthand, emoji);
                         input = input.replaceAll(data[i].emoji, emoji);
                     }
+                    // replace content with new openmoji content
                     element.innerHTML = input;
+                    // replace shorthands with actual emojis in alt tags
                     if(this.settings.keepShorthands === false){
                         let emojisAdded = element.getElementsByClassName('openmoji');
                         for(let i = 0; i < emojisAdded.length; ++i){
@@ -104,7 +148,7 @@ var OpenMoji = {
             let toDelete = [];
             for(let i = 0; i < emojis.length; ++i){
                 let placeholder = document.createElement('span');
-                element.insertBefore(placeholder, emojis[i]);
+                emojis[i].parentNode.insertBefore(placeholder, emojis[i]);
                 placeholder.replaceWith(emojis[i].getAttribute('alt'));
                 toDelete.push(emojis[i]);
             }
@@ -112,6 +156,19 @@ var OpenMoji = {
                 toDelete[i].remove();
             }
             return element.innerHTML;
+        }
+
+        /// Makes the element editable (with support for openmoji)
+        bindEditable(element){
+            if(element.tagName.toLowerCase() == "input"){
+                console.error("Cannot convert text to emojis within an <input> field; use <div>s instead.");
+                return;
+            }
+            element.setAttribute('contenteditable', '');
+            this.textToEmojis(element);
+            element.addEventListener('blur', e => {
+                this.textToEmojis(element);
+            });
         }
 
     }// class Converter
