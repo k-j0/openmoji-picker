@@ -1,16 +1,52 @@
 
 .openmoji{
     height: 1em;
-    transform: translateY(0.19em) scale(1.3);
+    transform: translateY(0.2em) scale(1.3);
 }
 
 .openmoji-smaller{
-    transform: translateY(0.19em) scale(1.05);
+    transform: translateY(0.2em) scale(1.05);
 }
 
 .openmoji-editable{
-    padding: 2px 8px;
+    padding: 0.2em 0.4em;
+    line-height: 1.2em;
     border-style: solid;
     border-color: grey;
     border-width: 1px;
+    position: relative;
+}
+
+.openmoji-editable.with-openmoji-picker{
+    padding-right: 1.8em;
+}
+
+.openmoji-picker-button{
+    position: absolute;
+    top: 0.2em;
+    right: 0.2em;
+    width: 1.2em;
+    height: 1.2em;
+    cursor: pointer;
+}
+
+.openmoji-picker-button>svg{
+    transform: scale(1.5);
+    pointer-events: none;
+}
+.openmoji-picker-button>svg:last-child{
+    display: none;
+}
+.openmoji-picker-button:hover>svg:first-child{
+    display: none;
+}
+.openmoji-picker-button:hover>svg:last-child{
+    display: block;
+}
+
+.openmoji-picker-button *{
+    stroke: grey;
+}
+.openmoji-picker-button:hover *{
+    stroke: black;
 }

@@ -1,29 +1,32 @@
 
-function getCaretCharacterOffsetWithin(element) {
-    var caretOffset = 0;
-    var doc = element.ownerDocument || element.document;
-    var win = doc.defaultView || doc.parentWindow;
-    var sel;
-    if (typeof win.getSelection != "undefined") {
-        sel = win.getSelection();
-        if (sel.rangeCount > 0) {
-            var range = win.getSelection().getRangeAt(0);
-            var preCaretRange = range.cloneRange();
-            preCaretRange.selectNodeContents(element);
-            preCaretRange.setEnd(range.endContainer, range.endOffset);
-            caretOffset = preCaretRange.toString().length;
-        }
-    } else if ( (sel = doc.selection) && sel.type != "Control") {
-        var textRange = sel.createRange();
-        var preCaretTextRange = doc.body.createTextRange();
-        preCaretTextRange.moveToElementText(element);
-        preCaretTextRange.setEndPoint("EndToEnd", textRange);
-        caretOffset = preCaretTextRange.text.length;
-    }
-    return caretOffset;
-}
-
 var OpenMoji = {
+
+    Utils : class{
+        /// Ensures the callback function is called, either immediately or once the DOM becomes interactable
+        static whenReady(callback){
+            if(document.readyState === "complete" || document.readyState === "interactive") {
+                callback();
+            }else{
+                window.addEventListener('DOMContentLoaded', () => {
+                    callback();
+                });
+            }
+        }
+
+        /// Performs a simple GET request on a resource and returns the response text within a Promise
+        static get(url){
+            return new Promise(function(resolve){
+                let httpGet = new XMLHttpRequest();
+                httpGet.onreadystatechange = function(){
+                    if(httpGet.readyState == 4 && httpGet.status == 200){
+                        resolve(httpGet.responseText);
+                    }
+                }
+                httpGet.open('GET', url, true);
+                httpGet.send(null);
+            });
+        }
+    },
 
     Converter : class{
 
@@ -35,6 +38,7 @@ var OpenMoji = {
          * - jsonUrl: the path at which to find the json file with all the data about the available openmoji emojis; defaults to "openmoji/data/openmoji.json"
          * - keepShorthands: set to false to convert text back to unicode emojis when calling `emojisToText` or when users copy and paste text; defaults to true
          * - baseEmojiUrl: the path at which to find all the different OpenMoji svg files, including trailing slash; defaults to "openmoji/color/svg/"
+         * - baseBWEmojiUrl: the path at which to find all the different OpenMoji black/white svg files, including trailing slash; defaults to baseEmojiUrl+"/../../black/svg/"
          * - editableClassName: the html class to use on editable content; defaults to "openmoji-editable"
          */
         constructor(settings){
@@ -44,7 +48,7 @@ var OpenMoji = {
 
             /// Inject openmoji styles to <head>
             if(settings.injectStyles !== false){
-                this.__get(settings.cssUrl ?? 'openmoji-picker/style.css').then((css) => {
+                OpenMoji.Utils.get(settings.cssUrl ?? 'openmoji-picker/style.css').then((css) => {
                     let head = document.getElementsByTagName('head')[0];
                     let style = document.createElement('style');
                     style.innerHTML = css;
@@ -53,7 +57,7 @@ var OpenMoji = {
             }
 
             /// Load OpenMoji data file
-            this.__futureData = this.__get(settings.jsonUrl ?? 'openmoji/data/openmoji.json').then((data) => {
+            this.__futureData = OpenMoji.Utils.get(settings.jsonUrl ?? 'openmoji/data/openmoji.json').then((data) => {
                 this.__data = JSON.parse(data);
             });
             this.__getData = function(){
@@ -66,34 +70,26 @@ var OpenMoji = {
             }
 
             /// Fired once DOM becomes interactable
-            let onready = () => {
+            OpenMoji.Utils.whenReady(() => {
                 /// Look for any openmoji-editable elements and instantiate them as editable openmoji fields
                 let editables = document.getElementsByClassName(settings.editableClassName ?? 'openmoji-editable');
                 [...editables].forEach(editable => {
                     this.bindEditable(editable);
                 });
-            };
-            if(document.readyState === "complete" || document.readyState === "interactive") {
-                onready();
-            }else{
-                window.addEventListener('DOMContentLoaded', () => {
-                    onready();
-                });
-            }
+            });
         }
 
-        /// Returns the contents of a file
-        __get(url){
-            return new Promise(function(resolve){
-                let httpGet = new XMLHttpRequest();
-                httpGet.onreadystatechange = function(){
-                    if(httpGet.readyState == 4 && httpGet.status == 200){
-                        resolve(httpGet.responseText);
-                    }
+        /// Returns the SVG path for an openmoji given its hexcode
+        getEmojiSvgPath(hexcode, colour = true){
+            let basePath = this.settings.baseEmojiUrl ?? "openmoji/color/svg/";
+            if(!colour){
+                if(this.settings.baseBWEmojiUrl == undefined){
+                    basePath = basePath + "../../black/svg/";
+                }else{
+                    basePath = this.settings.baseBWEmojiUrl;
                 }
-                httpGet.open('GET', url, true);
-                httpGet.send(null);
-            });
+            }
+            return basePath + hexcode + '.svg';
         }
 
         /// Creates & returns the markup required to display an emoji as an svg image
@@ -101,7 +97,7 @@ var OpenMoji = {
             let shorthand = this.getEmojiShorthand(data.annotation);
             let classes = "openmoji" + (shorthand.includes('flag') ? " openmoji-smaller" : "");
             return '<img class="'+classes+'" data-shorthand="'+shorthand+'" data-emojiindex="'+data.index+'" \
-                    src="'+(this.settings.baseEmojiUrl??"openmoji/color/svg/")+data.hexcode+'.svg" \
+                    src="' + this.getEmojiSvgPath(data.hexcode) + '" \
                     title="'+data.annotation+'" alt="'+shorthand+'">';
         }
 
@@ -164,13 +160,67 @@ var OpenMoji = {
                 console.error("Cannot convert text to emojis within an <input> field; use <div>s instead.");
                 return;
             }
-            element.setAttribute('contenteditable', '');
-            this.textToEmojis(element);
-            element.addEventListener('blur', e => {
-                this.textToEmojis(element);
+            let child = document.createElement('div');
+            // transfer contents of the original element to the child element
+            child.innerHTML = element.innerHTML;
+            element.innerHTML = "";
+            element.removeAttribute('contenteditable');
+            element.appendChild(child);
+            // make child editable
+            child.className = "openmoji-editable-input";
+            child.setAttribute('contenteditable', '');
+            this.textToEmojis(child);
+            // bind events
+            child.addEventListener('blur', e => {
+                this.textToEmojis(child);
+            });
+            // add functionality to the parent element for ease
+            element.getInputElement = () => { return child; };
+            element.getTextValue = () => { return child.innerHTML; };
+        }
+
+    },// class Converter
+
+    Picker : class{
+
+        /**
+         * Builds the picker object
+         * Possible settings:
+         * - converter: the Converter instance to use, or if left unset, add the Converter settings to the settings directly
+         * - pickerMixinClassName: the html class to use on elements where pickers should be inserted; defaults to "with-openmoji-picker"
+         */
+        constructor(settings){
+            this.settings = settings = settings ?? {};
+
+            this.converter = settings.converter ?? new OpenMoji.Converter(settings);
+
+            OpenMoji.Utils.whenReady(() => {
+
+                /// Add picker elements to any DOM nodes with class with-openmoji-picker
+                let pickers = document.getElementsByClassName(settings.pickerMixinClassName ?? 'with-openmoji-picker');
+                [...pickers].forEach(picker => {
+                    this.bindPicker(picker);
+                });
+
             });
         }
 
-    }// class Converter
+        /// Adds an openmoji picker to the element
+        bindPicker(element){
+
+            let picker = document.createElement('div');
+            element.appendChild(picker);
+            picker.className = 'openmoji-picker-button';
+
+            OpenMoji.Utils.get(this.converter.getEmojiSvgPath('1F60A', false)).then((response) => {
+                picker.innerHTML = response;
+                OpenMoji.Utils.get(this.converter.getEmojiSvgPath('1F604', false)).then((response) => {
+                    picker.innerHTML += response;
+                })
+            });
+
+        }
+
+    }// class Picker
 
 }// namespace OpenMoji

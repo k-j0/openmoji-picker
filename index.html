@@ -9,7 +9,7 @@
 
         <script src='openmoji-picker/script.js'></script>
         <script>
-            let converter = new OpenMoji.Converter({
+            let picker = new OpenMoji.Picker({
                 keepShorthands: false
             });
         </script>
@@ -31,18 +31,18 @@
             :flag-scotland::flag-new-zealand::t-rex::volcano::national-park::stadium::office-building:
         </div>
 
-        <div class='openmoji-editable'></div>
+        <div class='openmoji-editable with-openmoji-picker'></div>
 
         <script>
             let elem = document.getElementById('openmoji-example-toggle');
-            converter.textToEmojis(elem);
+            picker.converter.textToEmojis(elem);
             let toggle = true;
             elem.addEventListener('click', function(){
                 toggle = !toggle;
                 if(toggle){
-                    converter.textToEmojis(elem);
+                    picker.converter.textToEmojis(elem);
                 }else{
-                    converter.emojisToText(elem);
+                    picker.converter.emojisToText(elem);
                 }
             });
         </script>
