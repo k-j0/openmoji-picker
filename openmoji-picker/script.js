@@ -211,10 +211,12 @@ var OpenMoji = {
             let picker = document.createElement('div');
             element.appendChild(picker);
             picker.className = 'openmoji-picker-button';
+            picker.setAttribute('title', 'Insert emoji');
+            picker.setAttribute('alt', 'Insert emoji');
 
             OpenMoji.Utils.get(this.converter.getEmojiSvgPath('1F60A', false)).then((response) => {
                 picker.innerHTML = response;
-                OpenMoji.Utils.get(this.converter.getEmojiSvgPath('1F604', false)).then((response) => {
+                OpenMoji.Utils.get(this.converter.getEmojiSvgPath('1F604', true)).then((response) => {
                     picker.innerHTML += response;
                 })
             });

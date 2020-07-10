@@ -34,6 +34,9 @@
     transform: scale(1.5);
     pointer-events: none;
 }
+.openmoji-picker-button>svg:first-child *{
+    stroke: grey;
+}
 .openmoji-picker-button>svg:last-child{
     display: none;
 }
@@ -42,11 +45,4 @@
 }
 .openmoji-picker-button:hover>svg:last-child{
     display: block;
-}
-
-.openmoji-picker-button *{
-    stroke: grey;
-}
-.openmoji-picker-button:hover *{
-    stroke: black;
 }
