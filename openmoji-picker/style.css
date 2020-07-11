@@ -51,6 +51,8 @@
 
 
 .openmoji-picker{
+    --openmoji-picker-color: rgb(40, 40, 40);
+
     position: fixed;
     bottom: 0;
     left: 0;
@@ -58,11 +60,13 @@
     height: 350px;
     max-width: 100vw;
     max-height: 80vh;
-    padding: 10px;
+    padding: 5px 10px;
     z-index: 9999;
+    overflow: hidden;
     box-sizing: border-box;
     border-radius: 10px;
     background: white;
+    color: var(--openmoji-picker-color);
     box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.4);
     font-size: 1rem;
     cursor: default;
@@ -103,4 +107,91 @@
     .openmoji-picker[aria-hidden]{
         transform: scale(0);
     }
+}
+
+.openmoji-picker *::selection{
+    color: orange;
+    background: rgb(255, 220, 140);
+}
+
+.openmoji-picker-top{
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+    border-bottom-color: lightgrey;
+    font-size: 1.1em;
+    height: 1.667em;
+}
+
+.openmoji-picker-top>svg{
+    height: 1.3em;
+    display: inline-block;
+    transform: translateY(0.26em);
+}
+.openmoji-picker-top>svg *{
+    stroke: grey;
+}
+.openmoji-picker-top:hover>svg *{
+    stroke: orange;
+}
+
+.openmoji-picker input[type="text"]{
+    width: calc(100% - 1.75em);
+    height: 1.3em;
+    display: inline-block;
+    border: none;
+    font-family: inherit;
+    color: var(--openmoji-picker-color);
+    font-size: 1em;
+    padding: 0;
+    margin: 0;
+}
+
+.openmoji-picker-categories{
+    height: 2em;
+    margin-top: 0.3em;
+    display: flex;
+    justify-content: space-between;
+}
+
+.openmoji-picker-category-button{
+    flex: 1;
+    height: 2em;
+    width: 2em;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+}
+
+.openmoji-picker-category-button[selected]{
+    background: rgba(255, 166, 0, 0.1);
+}
+.openmoji-picker-category-button[selected]:after{
+    content: "";
+    position: absolute;
+    background: orange;
+    left: 0;
+    right: 0;
+    bottom: -4px;
+    height: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.openmoji-picker-category-button svg{
+    height: 100%;
+}
+.openmoji-picker-category-button svg:first-child *{
+    stroke: #555;
+}
+.openmoji-picker-category-button[selected] svg:first-child *{
+    stroke: black;
+}
+.openmoji-picker-category-button svg:last-child{
+    display: none;
+}
+.openmoji-picker-category-button:hover svg:first-child{
+    display: none;
+}
+.openmoji-picker-category-button:hover svg:last-child{
+    display: inline-block;
 }

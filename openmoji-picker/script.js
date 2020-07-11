@@ -74,15 +74,87 @@ var OpenMoji = {
             /// Load OpenMoji data file
             this.__futureData = OpenMoji.Utils.get(settings.jsonUrl ?? 'openmoji/data/openmoji.json').then((data) => {
                 this.__data = JSON.parse(data);
-            });
-            this.__getData = function(){
-                return new Promise((resolve) => {
-                    if(this.__data !== undefined) resolve(this.__data);
-                    this.__futureData.then(() => {
-                        resolve(this.__data);
-                    });
+                // parse the data to divide into emoji groups
+                let groups = {};
+                this.__data.forEach((emojiData) => {
+                    let groupName = emojiData.group;
+                    let baseEmoji = emojiData.skintone_base_emoji;
+                    if(baseEmoji === "") baseEmoji = emojiData.emoji;
+                    // apply special rules
+                    if(groupName == "food-drink" && emojiData.subgroups == "food-marine") groupName = "animals-nature"; // these fellas aren't food!
+                    switch(groupName){
+                        case "people-body":
+                        case "component":
+                            groupName = "smileys-emotion";
+                            break;
+                        case "extras-openmoji":
+                        case "extras-unicode":
+                            groupName = emojiData.subgroups;
+                            switch(groupName){
+                                case "brand": groupName = "symbols"; break;
+                                case "climate-environment": groupName = "animals-nature"; break;
+                                case "emergency": groupName = "activities"; break;
+                                case "gardening": groupName = "activities"; break;
+                                case "healthcare": groupName = "activities"; break;
+                                case "interaction": groupName = "symbols"; break;
+                                case "people": groupName = "activities"; break;
+                                case "subdivision-flag": groupName = "flags"; break;
+                                case "symbol-other": groupName = "symbols"; break;
+                                case "technology": groupName = "objects"; break;
+                                case "ui-element": groupName = "symbols"; break;
+                            }
+                            break;
+                    }
+                    if(!(groupName in groups)){
+                        let group = { count: 0, emojis: {}, index: Object.keys(groups).length };
+                        // assign header emoji
+                        switch(groupName){
+                            case "activities":
+                                group.icon = "1F3C0"; // basketball
+                                break;
+                            case "animals-nature":
+                                group.icon = "1FAB4"; // potted plant
+                                break;
+                            case "flags":
+                                group.icon = "1F6A9"; // triangular flag
+                                break;
+                            case "food-drink":
+                                group.icon = "1FAD0"; // blueberries
+                                break;
+                            case "objects":
+                                group.icon = "1F4A1"; // light bulb
+                                break;
+                            case "smileys-emotion":
+                                group.icon = "1F604"; // grinning face with smiling eyes
+                                break;
+                            case "symbols":
+                                group.icon = "267B"; // recycling symbol
+                                break;
+                            case "travel-places":
+                                group.icon = "1F6E9"; // small airplane
+                                break;
+                            default:
+                                group.icon = "1F990"; // shrimp
+                                break;
+                        }
+                        groups[groupName] = group;
+                    }
+                    if(!(baseEmoji in groups[groupName].emojis)){
+                        ++groups[groupName].count;
+                        groups[groupName].emojis[baseEmoji] = [];
+                    }
+                    groups[groupName].emojis[baseEmoji].push(emojiData);
                 });
-            }
+                // reformat groups to an indexed array
+                this.groups = [];
+                Object.keys(groups).forEach((groupName) => {
+                    let group = groups[groupName];
+                    group.name = groupName;
+                    this.groups[group.index] = group;
+                    delete group.index;
+                });
+                console.log("Loaded OpenMoji data", this.__data, "divided into groups", this.groups);
+            });
 
             /// Fired once DOM becomes interactable
             OpenMoji.Utils.whenReady(() => {
@@ -98,6 +170,19 @@ var OpenMoji = {
                 [...pickers].forEach(picker => {
                     this.bindPickerButton(picker);
                 });
+            });
+        }
+
+        /// Returns the OpenMoji data asynchronously (as soon as it's available)
+        getData(){
+            return new Promise((resolve) => {
+                if(this.__data !== undefined){
+                    resolve(this.__data);
+                }else{
+                    this.__futureData.then(() => {
+                        resolve(this.__data);
+                    });
+                }
             });
         }
 
@@ -131,42 +216,42 @@ var OpenMoji = {
 
         /// Converts emoticons in text to :shorthand-notation:
         emoticonsToShorthands(text){
-            text = text.replaceAll('&lt;3&lt;3&lt;3', ':sparkling-heart::sparkling-heart::sparkling-heart:')
-                       .replaceAll('&lt;3', ':red-heart:')
-                       .replaceAll('&lt;/3', ':broken-heart:')
-                       .replaceAll(':)', ':slightly-smiling-face:')
-                       .replaceAll('=)', ':slightly-smiling-face:')
-                       .replaceAll(':*', ':kissing-face-with-closed-eyes:')
-                       .replaceAll(';*', ':face-blowing-a-kiss:')
-                       .replaceAll('^^', ':smiling-face-with-smiling-eyes:')
-                       .replaceAll('^_^', ':smiling-face-with-smiling-eyes:')
-                       .replaceAll(':D', ':grinning-face-with-smiling-eyes:')
-                       .replaceAll('=D', ':grinning-face-with-smiling-eyes:')
-                       .replaceAll('8)', ':smiling-face-with-sunglasses:')
-                       .replaceAll(';)', ':winking-face:')
-                       .replaceAll(':P', ':face-savoring-food:')
-                       .replaceAll(':p', ':face-with-tongue:')
-                       .replaceAll(';p', ':winking-face-with-tongue:')
-                       .replaceAll(':/', ':confused-face:')
-                       .replaceAll('=/', ':confused-face:')
-                       .replaceAll(':\\', ':confused-face:')
-                       .replaceAll('=\\', ':confused-face:')
-                       .replaceAll(':|', ':neutral-face:')
-                       .replaceAll('=|', ':neutral-face:')
-                       .replaceAll('-_-', ':expressionless-face:')
-                       .replaceAll(':o', ':face-with-open-mouth:')
-                       .replaceAll(':O', ':exploding-head:')
-                       .replaceAll(":'(", ':crying-face:')
-                       .replaceAll("='(", ':crying-face:')
-                       .replaceAll("&gt;:(", ':pouting-face:')
-                       .replaceAll("&gt;=(", ':pouting-face:')
-                       .replaceAll(':(', ':frowning-face:')
-                       .replaceAll('=(', ':frowning-face:')
-                       .replaceAll(')D&gt;-', ':tongue::victory-hand:')
-                       .replaceAll(':o)', ':clown-face:')
-                       .replaceAll('=o)', ':clown-face:')
-                       .replaceAll('(:', ':upside-down-face:')
-                       .replaceAll('(=', ':upside-down-face:');
+            text = text.replaceAll('&lt;3&lt;3&lt;3 ', ':sparkling-heart::sparkling-heart::sparkling-heart: ')
+                       .replaceAll('&lt;3 ', ':red-heart: ')
+                       .replaceAll('&lt;/3 ', ':broken-heart: ')
+                       .replaceAll(':) ', ':slightly-smiling-face: ')
+                       .replaceAll('=) ', ':slightly-smiling-face: ')
+                       .replaceAll(':* ', ':kissing-face-with-closed-eyes: ')
+                       .replaceAll(';* ', ':face-blowing-a-kiss: ')
+                       .replaceAll('^^ ', ':smiling-face-with-smiling-eyes: ')
+                       .replaceAll('^_^ ', ':smiling-face-with-smiling-eyes: ')
+                       .replaceAll(':D ', ':grinning-face-with-smiling-eyes: ')
+                       .replaceAll('=D ', ':grinning-face-with-smiling-eyes: ')
+                       .replaceAll('8) ', ':smiling-face-with-sunglasses: ')
+                       .replaceAll(';) ', ':winking-face: ')
+                       .replaceAll(':P ', ':face-savoring-food: ')
+                       .replaceAll(':p ', ':face-with-tongue: ')
+                       .replaceAll(';p ', ':winking-face-with-tongue: ')
+                       .replaceAll(':/ ', ':confused-face: ')
+                       .replaceAll('=/ ', ':confused-face: ')
+                       .replaceAll(':\\ ', ':confused-face: ')
+                       .replaceAll('=\\ ', ':confused-face: ')
+                       .replaceAll(':| ', ':neutral-face: ')
+                       .replaceAll('=| ', ':neutral-face: ')
+                       .replaceAll('-_- ', ':expressionless-face: ')
+                       .replaceAll(':o ', ':face-with-open-mouth: ')
+                       .replaceAll(':O ', ':exploding-head: ')
+                       .replaceAll(":'( ", ':crying-face: ')
+                       .replaceAll("='( ", ':crying-face: ')
+                       .replaceAll("&gt;:( ", ':pouting-face: ')
+                       .replaceAll("&gt;=( ", ':pouting-face: ')
+                       .replaceAll(':( ', ':frowning-face: ')
+                       .replaceAll('=( ', ':frowning-face: ')
+                       .replaceAll(')D&gt;- ', ':tongue::victory-hand: ')
+                       .replaceAll(':o) ', ':clown-face: ')
+                       .replaceAll('=o) ', ':clown-face: ')
+                       .replaceAll('(: ', ':upside-down-face: ')
+                       .replaceAll('(= ', ':upside-down-face: ');
             return text;
         }
 
@@ -179,7 +264,7 @@ var OpenMoji = {
                 return;
             }
             return new Promise((resolve) => {
-                this.__getData().then((data) => {
+                this.getData().then((data) => {
                     // replace emoticons by :shorthands: in text
                     if(this.settings.allowEmoticons !== false){
                         input = this.emoticonsToShorthands(input);
@@ -256,18 +341,19 @@ var OpenMoji = {
             picker.setAttribute('title', 'Insert emoji');
             picker.setAttribute('alt', 'Insert emoji');
             let pickerInstance = null;
-            picker.addEventListener('click', () => {
-                if(!pickerInstance){
-                    pickerInstance = new OpenMoji.Picker(picker);
-                }else{
-                    pickerInstance.toggleVisibility();
-                }
-            });
 
             OpenMoji.Utils.get(this.getEmojiSvgPath('1F60A', false)).then((response) => {
                 picker.innerHTML = response;
                 OpenMoji.Utils.get(this.getEmojiSvgPath('1F604', true)).then((response) => {
                     picker.innerHTML += response;
+
+                    picker.addEventListener('click', () => {
+                        if(!pickerInstance){
+                            pickerInstance = new OpenMoji.Picker(picker, this);
+                        }else{
+                            pickerInstance.toggleVisibility();
+                        }
+                    });
                 })
             });
 
@@ -280,12 +366,14 @@ var OpenMoji = {
         /**
          * Displays the openmoji picker as coming out of the specified HTML element
          */
-        constructor(originNode){
+        constructor(originNode, converter){
             this.originNode = originNode;
 
+            // build picker panel
             this.pickerElem = document.createElement('div');
             this.pickerElem.className = "openmoji-picker";
             this.pickerElem.tabIndex = "-1";
+            this.pickerElem.title = "";
             this.pickerElem.addEventListener('click', (e) => {
                 e.stopPropagation();
             });
@@ -295,6 +383,48 @@ var OpenMoji = {
             });
             this.hide();
             originNode.appendChild(this.pickerElem);
+
+            // build top container (search icon and input)
+            let top = document.createElement('div');
+            this.pickerElem.appendChild(top);
+            top.className = 'openmoji-picker-top';
+            top.title = "Search for emoji by name";
+            OpenMoji.Utils.get(converter.getEmojiSvgPath('1F50E', false)).then((response) => {
+                top.innerHTML = response;// search icon as svg node
+                let input = document.createElement('input');
+                top.appendChild(input);
+                input.setAttribute('type', 'text');
+                input.setAttribute('placeholder', 'Search emoji');
+            });
+
+            // build category tabs
+            let categories = document.createElement('div');
+            this.pickerElem.appendChild(categories);
+            categories.className = 'openmoji-picker-categories';
+            converter.groups.forEach((group, index) => {
+                let tabButton = document.createElement('div');
+                categories.appendChild(tabButton);
+                tabButton.className = 'openmoji-picker-category-button';
+                tabButton.setAttribute('title', group.name.replace('-', ' & '));
+                tabButton.setAttribute('alt', "Select emoji category: "+group.name.replace('-', ' and '));
+                tabButton.emojiCategory = index;
+                tabButton.setAttribute('emoji-category', index);
+                if(index <= 0){
+                    tabButton.setAttribute('selected', '');
+                }
+                OpenMoji.Utils.get(converter.getEmojiSvgPath(group.icon, false)).then((response) => {
+                    tabButton.innerHTML = response;// default icon
+                    OpenMoji.Utils.get(converter.getEmojiSvgPath(group.icon)).then((response) => {
+                        tabButton.innerHTML += response;// hover icon
+                        tabButton.addEventListener('click', () => {
+                            [...categories.childNodes].forEach((categoryButton) => {
+                                categoryButton.removeAttribute('selected');
+                            });
+                            tabButton.setAttribute('selected', '');
+                        });
+                    });
+                });
+            });
 
             this.show();
         }
