@@ -40,6 +40,7 @@ var OpenMoji = {
          * - baseEmojiUrl: the path at which to find all the different OpenMoji svg files, including trailing slash; defaults to "openmoji/color/svg/"
          * - baseBWEmojiUrl: the path at which to find all the different OpenMoji black/white svg files, including trailing slash; defaults to baseEmojiUrl+"/../../black/svg/"
          * - editableClassName: the html class to use on editable content; defaults to "openmoji-editable"
+         * - pickerMixinClassName: the html class to use on elements where pickers should be inserted; defaults to "with-openmoji-picker"
          */
         constructor(settings){
             settings = settings ?? {};
@@ -71,10 +72,17 @@ var OpenMoji = {
 
             /// Fired once DOM becomes interactable
             OpenMoji.Utils.whenReady(() => {
+
                 /// Look for any openmoji-editable elements and instantiate them as editable openmoji fields
                 let editables = document.getElementsByClassName(settings.editableClassName ?? 'openmoji-editable');
                 [...editables].forEach(editable => {
                     this.bindEditable(editable);
+                });
+
+                /// Add picker elements to any DOM nodes with class with-openmoji-picker
+                let pickers = document.getElementsByClassName(settings.pickerMixinClassName ?? 'with-openmoji-picker');
+                [...pickers].forEach(picker => {
+                    this.bindPickerButton(picker);
                 });
             });
         }
@@ -179,34 +187,8 @@ var OpenMoji = {
             element.getTextValue = () => { return child.innerHTML; };
         }
 
-    },// class Converter
-
-    Picker : class{
-
-        /**
-         * Builds the picker object
-         * Possible settings:
-         * - converter: the Converter instance to use, or if left unset, add the Converter settings to the settings directly
-         * - pickerMixinClassName: the html class to use on elements where pickers should be inserted; defaults to "with-openmoji-picker"
-         */
-        constructor(settings){
-            this.settings = settings = settings ?? {};
-
-            this.converter = settings.converter ?? new OpenMoji.Converter(settings);
-
-            OpenMoji.Utils.whenReady(() => {
-
-                /// Add picker elements to any DOM nodes with class with-openmoji-picker
-                let pickers = document.getElementsByClassName(settings.pickerMixinClassName ?? 'with-openmoji-picker');
-                [...pickers].forEach(picker => {
-                    this.bindPicker(picker);
-                });
-
-            });
-        }
-
         /// Adds an openmoji picker to the element
-        bindPicker(element){
+        bindPickerButton(element){
 
             let picker = document.createElement('div');
             element.appendChild(picker);
@@ -214,15 +196,15 @@ var OpenMoji = {
             picker.setAttribute('title', 'Insert emoji');
             picker.setAttribute('alt', 'Insert emoji');
 
-            OpenMoji.Utils.get(this.converter.getEmojiSvgPath('1F60A', false)).then((response) => {
+            OpenMoji.Utils.get(this.getEmojiSvgPath('1F60A', false)).then((response) => {
                 picker.innerHTML = response;
-                OpenMoji.Utils.get(this.converter.getEmojiSvgPath('1F604', true)).then((response) => {
+                OpenMoji.Utils.get(this.getEmojiSvgPath('1F604', true)).then((response) => {
                     picker.innerHTML += response;
                 })
             });
 
         }
 
-    }// class Picker
+    }// class Converter
 
 }// namespace OpenMoji

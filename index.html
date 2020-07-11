@@ -9,40 +9,32 @@
 
         <script src='openmoji-picker/script.js'></script>
         <script>
-            let picker = new OpenMoji.Picker({
+            let converter = new OpenMoji.Converter({
                 keepShorthands: false
             });
         </script>
     </head>
     <body>
 
-        <div id='openmoji-example-toggle' style='padding:20px;background:lightgrey'>
+        <div id='openmoji-example-toggle'>
             Click this div to toggle between OpenMoji and default browser emojis<br>
-            this &#x1f1f3;&#x1f1f4; should be the flag of norway<br>
-            this &#x1F3F4;&#xE0067;&#xE0062;&#xE0073;&#xE0063;&#xE0074;&#xE007F; should be the flag of scotland<br>
-            this &#128512; should be a smiling face<br>
-            this &#x1f990; should be a shrimp<br>
-            this 🇳🇴 should be the flag of norway<br>
-            this 🦐 should be a shrimp<br>
-            this 🐸 should be a frog<br>
-            this &#x1F438; should be a frog<br>
-            this &#x1F3F4;&#xE0075;&#xE0073;&#xE0063;&#xE0061;&#xE007F; should be the flag of california<br>
-            this :shrimp: should be a shrimp<br>
-            :flag-scotland::flag-new-zealand::t-rex::volcano::national-park::stadium::office-building:
+            Unicode in source: &#x1F60A; &#x1f990; &#x1F438; &#x1F43F;&#xFE0F; &#x1F98A; &#x1F3F4;&#xE0067;&#xE0062;&#xE0073;&#xE0063;&#xE0074;&#xE007F; &#x1f1f3;&#x1f1f4; &#x1F3F4;&#xE0075;&#xE0073;&#xE0063;&#xE0061;&#xE007F;<br/>
+            Emoji in source: 😊 🦐 🐸 🐿️ 🦊 🏴󠁧󠁢󠁳󠁣󠁴󠁿 🇳🇴 🏴󠁵󠁳󠁣󠁡󠁿<br/>
+            Shorthand in source: :smiling-face-with-smiling-eyes: :shrimp: :frog: :chipmunk: :fox: :flag-scotland: :flag-norway: :california-flag:
         </div>
 
         <div class='openmoji-editable with-openmoji-picker'></div>
 
         <script>
             let elem = document.getElementById('openmoji-example-toggle');
-            picker.converter.textToEmojis(elem);
+            converter.textToEmojis(elem);
             let toggle = true;
             elem.addEventListener('click', function(){
                 toggle = !toggle;
                 if(toggle){
-                    picker.converter.textToEmojis(elem);
+                    converter.textToEmojis(elem);
                 }else{
-                    picker.converter.emojisToText(elem);
+                    converter.emojisToText(elem);
                 }
             });
         </script>
