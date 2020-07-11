@@ -195,3 +195,18 @@
 .openmoji-picker-category-button:hover svg:last-child{
     display: inline-block;
 }
+
+.openmoji-picker-emoji-container{
+    background: lightgrey;
+    height: calc(100% - 4.8em);
+    margin-top: 6px;
+    overflow-y: scroll;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+.openmoji-picker-emoji-container::-webkit-scrollbar{
+    display: none;
+}

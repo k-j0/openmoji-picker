@@ -397,10 +397,20 @@ var OpenMoji = {
                 input.setAttribute('placeholder', 'Search emoji');
             });
 
-            // build category tabs
+            // build category tabs & emoji div
             let categories = document.createElement('div');
+            let emojiContainer = document.createElement('div');
             this.pickerElem.appendChild(categories);
+            this.pickerElem.appendChild(emojiContainer);
             categories.className = 'openmoji-picker-categories';
+            emojiContainer.className = 'openmoji-picker-emoji-container';
+            let selectCategory = function(categoryButton, group){
+                categoryButton.setAttribute('selected', '');
+                // display emojis to select from
+            }
+            let unselectCategory = function(categoryButton){
+                categoryButton.removeAttribute('selected');
+            }
             converter.groups.forEach((group, index) => {
                 let tabButton = document.createElement('div');
                 categories.appendChild(tabButton);
@@ -410,7 +420,7 @@ var OpenMoji = {
                 tabButton.emojiCategory = index;
                 tabButton.setAttribute('emoji-category', index);
                 if(index <= 0){
-                    tabButton.setAttribute('selected', '');
+                    selectCategory(tabButton, group);
                 }
                 OpenMoji.Utils.get(converter.getEmojiSvgPath(group.icon, false)).then((response) => {
                     tabButton.innerHTML = response;// default icon
@@ -418,9 +428,9 @@ var OpenMoji = {
                         tabButton.innerHTML += response;// hover icon
                         tabButton.addEventListener('click', () => {
                             [...categories.childNodes].forEach((categoryButton) => {
-                                categoryButton.removeAttribute('selected');
+                                unselectCategory(categoryButton);
                             });
-                            tabButton.setAttribute('selected', '');
+                            selectCategory(tabButton, group);
                         });
                     });
                 });
