@@ -37,6 +37,7 @@ var OpenMoji = {
          * - cssUrl: the path at which to find the stylesheet; defaults to "openmoji-picker/style.css"
          * - jsonUrl: the path at which to find the json file with all the data about the available openmoji emojis; defaults to "openmoji/data/openmoji.json"
          * - keepShorthands: set to false to convert text back to unicode emojis when calling `emojisToText` or when users copy and paste text; defaults to true
+         * - allowEmoticons: set to false to prevent converting emoticons like "<3" to openmoji; defaults to true
          * - baseEmojiUrl: the path at which to find all the different OpenMoji svg files, including trailing slash; defaults to "openmoji/color/svg/"
          * - baseBWEmojiUrl: the path at which to find all the different OpenMoji black/white svg files, including trailing slash; defaults to baseEmojiUrl+"/../../black/svg/"
          * - editableClassName: the html class to use on editable content; defaults to "openmoji-editable"
@@ -114,6 +115,47 @@ var OpenMoji = {
             return ':' + annotation.toLowerCase().replaceAll(' ', '-').replaceAll(':', '') + ':';
         }
 
+        /// Converts emoticons in text to :shorthand-notation:
+        emoticonsToShorthands(text){
+            text = text.replaceAll('&lt;3&lt;3&lt;3', ':sparkling-heart::sparkling-heart::sparkling-heart:')
+                       .replaceAll('&lt;3', ':red-heart:')
+                       .replaceAll('&lt;/3', ':broken-heart:')
+                       .replaceAll(':)', ':slightly-smiling-face:')
+                       .replaceAll('=)', ':slightly-smiling-face:')
+                       .replaceAll(':*', ':kissing-face-with-closed-eyes:')
+                       .replaceAll(';*', ':face-blowing-a-kiss:')
+                       .replaceAll('^^', ':smiling-face-with-smiling-eyes:')
+                       .replaceAll('^_^', ':smiling-face-with-smiling-eyes:')
+                       .replaceAll(':D', ':grinning-face-with-smiling-eyes:')
+                       .replaceAll('=D', ':grinning-face-with-smiling-eyes:')
+                       .replaceAll('8)', ':smiling-face-with-sunglasses:')
+                       .replaceAll(';)', ':winking-face:')
+                       .replaceAll(':P', ':face-savoring-food:')
+                       .replaceAll(':p', ':face-with-tongue:')
+                       .replaceAll(';p', ':winking-face-with-tongue:')
+                       .replaceAll(':/', ':confused-face:')
+                       .replaceAll('=/', ':confused-face:')
+                       .replaceAll(':\\', ':confused-face:')
+                       .replaceAll('=\\', ':confused-face:')
+                       .replaceAll(':|', ':neutral-face:')
+                       .replaceAll('=|', ':neutral-face:')
+                       .replaceAll('-_-', ':expressionless-face:')
+                       .replaceAll(':o', ':face-with-open-mouth:')
+                       .replaceAll(':O', ':exploding-head:')
+                       .replaceAll(":'(", ':crying-face:')
+                       .replaceAll("='(", ':crying-face:')
+                       .replaceAll("&gt;:(", ':pouting-face:')
+                       .replaceAll("&gt;=(", ':pouting-face:')
+                       .replaceAll(':(', ':frowning-face:')
+                       .replaceAll('=(', ':frowning-face:')
+                       .replaceAll(')D&gt;-', ':tongue::victory-hand:')
+                       .replaceAll(':o)', ':clown-face:')
+                       .replaceAll('=o)', ':clown-face:')
+                       .replaceAll('(:', ':upside-down-face:')
+                       .replaceAll('(=', ':upside-down-face:');
+            return text;
+        }
+
         /// Converts some text containing unicode emojis or :shorthand-notations: to use svgs from openmoji instead
         textToEmojis(element){
             this.emojisToText(element);
@@ -124,6 +166,10 @@ var OpenMoji = {
             }
             return new Promise((resolve) => {
                 this.__getData().then((data) => {
+                    // replace emoticons by :shorthands: in text
+                    if(this.settings.allowEmoticons !== false){
+                        input = this.emoticonsToShorthands(input);
+                    }
                     // replace emojis and :shorthands: in text
                     for(let i = data.length-1; i >= 0; --i){
                         data[i].index = i;
