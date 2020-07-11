@@ -26,7 +26,19 @@ var OpenMoji = {
                 httpGet.send(null);
             });
         }
-    },
+
+        /// Returns whether the child node is nested within the parent node
+        static isDescendant(child, parent){
+            if(child === parent) return true;
+            var node = child.parentNode;
+            while(node){
+                if(node === parent) return true;
+                node = node.parentNode;
+            }
+            return false;
+        }
+
+    },// class Utils
 
     Converter : class{
 
@@ -241,6 +253,14 @@ var OpenMoji = {
             picker.className = 'openmoji-picker-button';
             picker.setAttribute('title', 'Insert emoji');
             picker.setAttribute('alt', 'Insert emoji');
+            let pickerInstance = null;
+            picker.addEventListener('click', () => {
+                if(!pickerInstance){
+                    pickerInstance = new OpenMoji.Picker(picker);
+                }else{
+                    pickerInstance.toggleVisibility();
+                }
+            });
 
             OpenMoji.Utils.get(this.getEmojiSvgPath('1F60A', false)).then((response) => {
                 picker.innerHTML = response;
@@ -251,6 +271,63 @@ var OpenMoji = {
 
         }
 
-    }// class Converter
+    },// class Converter
+
+    Picker : class{
+
+        /**
+         * Displays the openmoji picker as coming out of the specified HTML element
+         */
+        constructor(originNode){
+            this.originNode = originNode;
+
+            this.pickerElem = document.createElement('div');
+            this.pickerElem.className = "openmoji-picker";
+            this.pickerElem.tabIndex = "-1";
+            this.pickerElem.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            document.addEventListener('click', (e) => {
+                if(this.shown && !OpenMoji.Utils.isDescendant(e.target, this.pickerElem) && e.target !== this.originNode)
+                    this.hide();
+            });
+            this.hide();
+            originNode.appendChild(this.pickerElem);
+
+            this.show();
+        }
+
+        /**
+         * Closes the picker element
+         */
+        hide(){
+            this.pickerElem.setAttribute('aria-hidden', '');
+            this.shown = false;
+        }
+
+        /**
+         * Opens the picker element after it's been closed
+         */
+        show(){
+            // place element at a good spot to be as visible as possible
+            let aabb = this.originNode.getBoundingClientRect();
+            let center = {x: (aabb.left + Math.abs(aabb.width)/2), y: (aabb.top + Math.abs(aabb.height)/2)};
+            let fromTop = center.y < document.documentElement.clientHeight / 2;
+            let fromLeft = center.x < document.documentElement.clientWidth / 2;
+            this.pickerElem.setAttribute('from', (fromTop ? "top" : "bottom")+'-'+(fromLeft ? "left" : "right"));
+
+            this.pickerElem.removeAttribute('aria-hidden');
+            this.shown = true;
+        }
+
+        /**
+         * Toggles between hide() and show()
+         */
+        toggleVisibility(){
+            if(this.shown) this.hide();
+            else this.show();
+        }
+
+    }// class Picker
 
 }// namespace OpenMoji

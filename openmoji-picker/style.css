@@ -37,12 +37,66 @@
 .openmoji-picker-button>svg:first-child *{
     stroke: grey;
 }
-.openmoji-picker-button>svg:last-child{
+.openmoji-picker-button>svg:nth-child(2){
     display: none;
 }
 .openmoji-picker-button:hover>svg:first-child{
     display: none;
 }
-.openmoji-picker-button:hover>svg:last-child{
+.openmoji-picker-button:hover>svg:nth-child(2){
     display: block;
+}
+
+
+.openmoji-picker{
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 350px;
+    padding: 10px;
+    z-index: 9999;
+    box-sizing: border-box;
+    border-radius: 10px;
+    background: white;
+    box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.4);
+    font-size: 1rem;
+    cursor: default;
+    transition: 0.05s;
+    transform: translateY(0);
+}
+.openmoji-picker[aria-hidden]{
+    transform: translateY(400px);
+}
+@media screen and (min-width: 479px){
+    .openmoji-picker{
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: unset;
+        width: 300px;
+        height: 350px;
+        transform: scale(1);
+        transform-origin: bottom right;
+    }
+    .openmoji-picker[from='top-left']{
+        top: 0;
+        bottom: unset;
+        left: 0;
+        right: unset;
+        transform-origin: top left;
+    }
+    .openmoji-picker[from='top-right']{
+        top: 0;
+        bottom: unset;
+        transform-origin: top right;
+    }
+    .openmoji-picker[from='bottom-left']{
+        left: 0;
+        right: unset;
+        transform-origin: bottom left;
+    }
+    .openmoji-picker[aria-hidden]{
+        transform: scale(0);
+    }
 }
