@@ -54,6 +54,7 @@ var OpenMoji = {
          * - baseBWEmojiUrl: the path at which to find all the different OpenMoji black/white svg files, including trailing slash; defaults to baseEmojiUrl+"/../../black/svg/"
          * - editableClassName: the html class to use on editable content; defaults to "openmoji-editable"
          * - pickerMixinClassName: the html class to use on elements where pickers should be inserted; defaults to "with-openmoji-picker"
+         * - scaleEmojis: if true, openmojis will be slightly scaled up; defaults to true
          */
         constructor(settings){
             settings = settings ?? {};
@@ -117,9 +118,10 @@ var OpenMoji = {
         makeEmojiImage(data){
             let shorthand = this.getEmojiShorthand(data.annotation);
             let classes = "openmoji" + (shorthand.includes('flag') ? " openmoji-smaller" : "");
+            let additionalAttributes = (this.settings.scaleEmojis !== false ? "scaled" : "");
             return '<img class="'+classes+'" data-shorthand="'+shorthand+'" data-emojiindex="'+data.index+'" \
                     src="' + this.getEmojiSvgPath(data.hexcode) + '" \
-                    title="'+data.annotation+'" alt="'+shorthand+'">';
+                    title="'+data.annotation+'" alt="'+shorthand+'" ' + additionalAttributes + '>';
         }
 
         /// Returns the shorthand notation of an emoji
