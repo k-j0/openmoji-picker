@@ -52,8 +52,9 @@ var OpenMoji = {
          * - allowEmoticons: set to false to prevent converting emoticons like "<3" to openmoji; defaults to true
          * - baseEmojiUrl: the path at which to find all the different OpenMoji svg files, including trailing slash; defaults to "openmoji/color/svg/"
          * - baseBWEmojiUrl: the path at which to find all the different OpenMoji black/white svg files, including trailing slash; defaults to baseEmojiUrl+"/../../black/svg/"
-         * - editableClassName: the html class to use on editable content; defaults to "openmoji-editable"
-         * - pickerMixinClassName: the html class to use on elements where pickers should be inserted; defaults to "with-openmoji-picker"
+         * - readonlyClassName: the html class to use to find readonly openmoji content; defaults to "openmoji-readonly"
+         * - editableClassName: the html class to use to find editable content; defaults to "openmoji-editable"
+         * - pickerMixinClassName: the html class to use to find elements where pickers should be inserted; defaults to "with-openmoji-picker"
          * - scaleEmojis: if true, openmojis will be slightly scaled up; defaults to true
          * - verbose: if true, will log debug information to the console; can also be set to the string literal "full"; defaults to false
          */
@@ -61,6 +62,9 @@ var OpenMoji = {
             settings = settings ?? {};
 
             this.settings = settings;
+
+            // Features needed to ensure proper functionality
+            MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 
             /// Inject openmoji styles to <head>
             if(settings.injectStyles !== false){
@@ -168,6 +172,12 @@ var OpenMoji = {
 
             /// Fired once DOM becomes interactable
             OpenMoji.Utils.whenReady(() => {
+
+                /// Look for any openmoji-readonly elements and set up events on them
+                let readonlys = document.getElementsByClassName(settings.readonlyClassName ?? 'openmoji-readonly');
+                [...readonlys].forEach(readonly => {
+                    this.bindReadonly(readonly);
+                });
 
                 /// Look for any openmoji-editable elements and instantiate them as editable openmoji fields
                 let editables = document.getElementsByClassName(settings.editableClassName ?? 'openmoji-editable');
@@ -321,6 +331,25 @@ var OpenMoji = {
                 toDelete[i].remove();
             }
             return element.innerHTML;
+        }
+
+        /// Adds openmoji support to the element; anytime it changes, textToEmojis will be called for it
+        bindReadonly(element){
+            this.textToEmojis(element);
+            let observe = (observer) => {
+                observer.observe(element, {
+                    subtree: true,
+                    childList: true
+                });
+            };
+            let observer = new MutationObserver(() => {
+                observer.disconnect();
+                if(this.settings.verbose === "full") console.log("Updating openmoji-readonly contents for", element);
+                this.textToEmojis(element).then(() => {
+                    observe(observer);
+                });
+            });
+            observe(observer);
         }
 
         /// Makes the element editable (with support for openmoji)

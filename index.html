@@ -17,7 +17,7 @@
     </head>
     <body>
 
-        <div id='openmoji-example-toggle'>
+        <div id='openmoji-example-toggle' class='openmoji-readonly'>
             Click this div to toggle between OpenMoji and default browser emojis<br>
             Unicode in source: &#x1F60A; &#x1f990; &#x1F438; &#x1F43F;&#xFE0F; &#x1F98A; &#x1F3F4;&#xE0067;&#xE0062;&#xE0073;&#xE0063;&#xE0074;&#xE007F; &#x1f1f3;&#x1f1f4; &#x1F3F4;&#xE0075;&#xE0073;&#xE0063;&#xE0061;&#xE007F;<br/>
             Emoji in source: 😊 🦐 🐸 🐿️ 🦊 🏴󠁧󠁢󠁳󠁣󠁴󠁿 🇳🇴 🏴󠁵󠁳󠁣󠁡󠁿<br/>
@@ -29,7 +29,7 @@
 
         <script>
             let elem = document.getElementById('openmoji-example-toggle');
-            converter.textToEmojis(elem);
+            /*converter.textToEmojis(elem);
             let toggle = true;
             elem.addEventListener('click', function(){
                 toggle = !toggle;
@@ -38,7 +38,7 @@
                 }else{
                     converter.emojisToText(elem);
                 }
-            });
+            });*/
         </script>
 
     </body>
