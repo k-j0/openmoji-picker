@@ -232,6 +232,7 @@
     height: 100%;
     cursor: pointer;
     border-radius: 15%;
+    color: white;
 }
 .openmoji-picker-emoji-button:hover{
     background: rgba(255, 166, 0, 0.2);

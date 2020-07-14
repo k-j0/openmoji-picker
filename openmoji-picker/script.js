@@ -535,6 +535,7 @@ var OpenMoji = {
                     img.src = this.converter.getEmojiSvgPath(mainEmoji.hexcode);
                     img.className = 'openmoji-picker-emoji-button';
                     img.title = mainEmoji.annotation;
+                    img.alt = mainEmoji.annotation;
                     img.addEventListener('click', () => {
                         this.insertEmoji(this.converter.makeEmojiImageNode(mainEmoji));
                     });
@@ -573,7 +574,7 @@ var OpenMoji = {
             let disclaimer = document.createElement('div');
             this.pickerElem.appendChild(disclaimer);
             disclaimer.className = "openmoji-picker-disclaimer";
-            disclaimer.innerHTML = "Uses <a href='https://openmoji.org/'>OpenMoji</a> under <a href='https://creativecommons.org/licenses/by-sa/4.0/'>CC BY-SA 4.0</a> | ⚑ <a href='https://github.com/k-j0/openmoji-picker/issues/'>Report picker issues</a>";
+            disclaimer.innerHTML = "Uses <a href='https://openmoji.org/'>OpenMoji</a> under <a href='https://creativecommons.org/licenses/by-sa/4.0/'>CC BY-SA 4.0</a> | ⚑ <a href='https://github.com/k-j0/openmoji-picker/issues/'>Report issues</a>";
 
             this.show();
         }
