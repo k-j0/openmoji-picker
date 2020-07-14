@@ -143,7 +143,7 @@ var OpenMoji = {
                             break;
                     }
                     if(!(groupName in groups)){
-                        let group = { count: 0, emojis: {}, index: Object.keys(groups).length };
+                        let group = { count: 0, emojis: [], index: Object.keys(groups).length };
                         // assign header emoji
                         switch(groupName){
                             case "activities":
@@ -187,6 +187,11 @@ var OpenMoji = {
                 Object.keys(groups).forEach((groupName) => {
                     let group = groups[groupName];
                     group.name = groupName;
+                    // reformat emojis within group to an indexed array
+                    Object.keys(group.emojis).forEach((key, index) => {
+                        group.emojis[index] = group.emojis[key];
+                        delete group.emojis[key];
+                    });
                     this.groups[group.index] = group;
                     delete group.index;
                 });
@@ -500,11 +505,21 @@ var OpenMoji = {
             this.pickerElem.appendChild(emojiContainer);
             categories.className = 'openmoji-picker-categories';
             emojiContainer.className = 'openmoji-picker-emoji-container';
-            let selectCategory = function(categoryButton, group){
+            let selectCategory = (categoryButton, group) => {
                 categoryButton.setAttribute('selected', '');
                 // display emojis to select from
+                emojiContainer.innerHTML = "";
+                emojiContainer.scrollTop = 0;
+                group.emojis.forEach((skintones) => {
+                    let mainEmoji = skintones[0];
+                    let img = document.createElement('img');
+                    img.src = this.converter.getEmojiSvgPath(mainEmoji.hexcode);
+                    img.className = 'openmoji-picker-emoji-button';
+                    img.title = mainEmoji.annotation;
+                    emojiContainer.appendChild(img);
+                });
             }
-            let unselectCategory = function(categoryButton){
+            let unselectCategory = (categoryButton) => {
                 categoryButton.removeAttribute('selected');
             }
             converter.groups.forEach((group, index) => {
