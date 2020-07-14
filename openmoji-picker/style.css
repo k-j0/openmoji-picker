@@ -76,6 +76,17 @@
 .openmoji-picker[aria-hidden]{
     transform: translateY(400px);
 }
+
+@media screen and (max-width: 274px){
+    .openmoji-picker{
+        font-size: 0.8rem;
+    }
+}
+@media screen and (max-width: 228px){
+    .openmoji-picker{
+        font-size: 0.5rem;
+    }
+}
 @media screen and (min-width: 479px){
     .openmoji-picker{
         position: absolute;
@@ -198,7 +209,7 @@
 
 .openmoji-picker-emoji-container{
     background: lightgrey;
-    height: calc(100% - 4.8em);
+    height: calc(100% - 5.8em);
     margin-top: 6px;
     overflow-y: scroll;
     -ms-overflow-style: none;
@@ -209,4 +220,16 @@
 }
 .openmoji-picker-emoji-container::-webkit-scrollbar{
     display: none;
+}
+
+.openmoji-picker-disclaimer{
+    height: 0.72em;
+    font-size: 0.6em;
+    color: #666;
+}
+.openmoji-picker-disclaimer a{
+    color: inherit;
+}
+.openmoji-picker-disclaimer a:hover{
+    color: orange;
 }

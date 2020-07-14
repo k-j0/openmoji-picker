@@ -481,6 +481,12 @@ var OpenMoji = {
                 });
             });
 
+            // build license disclaimer
+            let disclaimer = document.createElement('div');
+            this.pickerElem.appendChild(disclaimer);
+            disclaimer.className = "openmoji-picker-disclaimer";
+            disclaimer.innerHTML = "Uses <a href='https://openmoji.org/'>OpenMoji</a> under <a href='https://creativecommons.org/licenses/by-sa/4.0/'>CC BY-SA 4.0</a> | ⚑ <a href='https://github.com/k-j0/openmoji-picker/issues/'>Report picker issues</a>";
+
             this.show();
         }
 
