@@ -1,4 +1,6 @@
 
+"use strict";
+
 var OpenMoji = {
 
     Utils : class{
@@ -369,8 +371,29 @@ var OpenMoji = {
             child.setAttribute('contenteditable', '');
             this.textToEmojis(child);
             // bind events
+            child.caretSelection = null;
+            document.addEventListener('selectionchange', () => {
+                let sel = document.getSelection();
+                let focusNode = sel.focusNode;
+                // check that the selection change happened within this element
+                if(document.activeElement !== document.body && OpenMoji.Utils.isDescendant(focusNode, child)){
+                    child.caretSelection = {
+                        node: focusNode,
+                        offset: sel.focusOffset,
+                        parent: focusNode.parentElement,
+                        nodeIndex: [...focusNode.parentElement.childNodes].indexOf(focusNode)
+                    };
+                }
+            });
             child.addEventListener('blur', e => {
-                this.textToEmojis(child);
+                // convert text contents
+                let initialContents = child.innerHTML;
+                this.textToEmojis(child).then(() => {
+                    if(initialContents != child.innerHTML){
+                        // contents have been changed
+                        child.caretSelection = null;
+                    }
+                });
             });
             // add functionality to the parent element for ease
             element.getInputElement = () => { return child; };
@@ -394,7 +417,7 @@ var OpenMoji = {
 
                     picker.addEventListener('click', () => {
                         if(!pickerInstance){
-                            pickerInstance = new OpenMoji.Picker(picker, this);
+                            pickerInstance = new OpenMoji.Picker(picker, element.getInputElement(), this);
                         }else{
                             pickerInstance.toggleVisibility();
                         }
@@ -411,8 +434,10 @@ var OpenMoji = {
         /**
          * Displays the openmoji picker as coming out of the specified HTML element
          */
-        constructor(originNode, converter){
+        constructor(originNode, inputFieldNode, converter){
             this.originNode = originNode;
+            this.inputFieldNode = inputFieldNode;
+            this.converter = converter;
 
             // build picker panel
             this.pickerElem = document.createElement('div');
@@ -481,6 +506,15 @@ var OpenMoji = {
                 });
             });
 
+            // test code
+            emojiContainer.addEventListener('click', () => {
+                let elem = document.createElement('img');
+                elem.className = 'openmoji';
+                elem.src = "openmoji/color/svg/1F43B-200D-2744-FE0F.svg";
+                elem.setAttribute('scaled', '');
+                this.insertEmoji(elem);
+            });
+
             // build license disclaimer
             let disclaimer = document.createElement('div');
             this.pickerElem.appendChild(disclaimer);
@@ -519,6 +553,46 @@ var OpenMoji = {
         toggleVisibility(){
             if(this.shown) this.hide();
             else this.show();
+        }
+
+        /**
+         * Inserts an emoji within the given node (leave node as null to use current input field)
+         * The insertion will happen at the last known caret position, or at the end if none.
+         */
+        insertEmoji(emojiElement, element = null){
+            if(element === null) element = this.inputFieldNode;
+
+            if(this.converter.settings.verbose === "full") console.log("Inserting element", emojiElement, "into", element);
+
+            this.hide();
+            if(element.caretSelection !== null){
+                let node = element.caretSelection.node;
+                let offset = element.caretSelection.offset;
+                let parent = element.caretSelection.parent;
+                let nodeIndex = element.caretSelection.nodeIndex;
+                if(node.nodeName == '#text'){
+                    if(this.converter.settings.verbose === "full") console.log("inserting into a text node:", node, "(parent", parent, ", index", nodeIndex, "), at offset", offset);
+                    node = parent.childNodes[nodeIndex];
+                    let value = node.textContent;
+                    parent.insertBefore(document.createTextNode(value.substr(0, offset)), node);
+                    parent.insertBefore(emojiElement, node);
+                    parent.insertBefore(document.createTextNode(value.substr(offset)), node);
+                    parent.removeChild(node);
+                }else{
+                    if(this.converter.settings.verbose === "full") console.log("inserting into a non-text node:", node, ", at offset", offset);
+                    node.insertBefore(emojiElement, node.childNodes[offset]);
+                }
+            }else{
+                // no selection available for the element, insert at the very end
+                let finalNode = element;
+                if(element.childNodes.length > 0 && element.childNodes[element.childNodes.length - 1].nodeName.toLowerCase() == "div"){
+                    finalNode = element.childNodes[element.childNodes.length - 1];
+                }
+                // ensure we don't insert on a new line (contenteditable will insert <br> tag upon pressing space)
+                if(finalNode.innerHTML.endsWith('<br>')) finalNode.innerHTML = finalNode.innerHTML.substr(0, finalNode.innerHTML.length - '<br>'.length);
+                else if(finalNode.innerHTML.endsWith('<br/>')) finalNode.innerHTML = finalNode.innerHTML.substr(0, finalNode.innerHTML.length - '<br/>'.length);
+                finalNode.innerHTML += emojiElement.outerHTML;
+            }
         }
 
     }// class Picker
