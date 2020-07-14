@@ -368,6 +368,7 @@ var OpenMoji = {
             element.appendChild(child);
             // make child editable
             child.className = "openmoji-editable-input";
+            child.id = "openmoji-editable-input-" + (""+Math.random()).substr(2);
             child.setAttribute('contenteditable', '');
             this.textToEmojis(child);
             // bind events
@@ -377,10 +378,13 @@ var OpenMoji = {
                 let focusNode = sel.focusNode;
                 // check that the selection change happened within this element
                 if(document.activeElement !== document.body && OpenMoji.Utils.isDescendant(focusNode, child)){
+                    // assign unique id to the focused node
+                    let previousFocus = document.getElementById(child.id + "-focus");
+                    if(previousFocus) previousFocus.removeAttribute('id');
+                    if(focusNode.parentElement.id === undefined || focusNode.parentElement.id === "") focusNode.parentElement.id = child.id + "-focus";
                     child.caretSelection = {
-                        node: focusNode,
+                        parentNodeId: focusNode.parentElement.id,
                         offset: sel.focusOffset,
-                        parent: focusNode.parentElement,
                         nodeIndex: [...focusNode.parentElement.childNodes].indexOf(focusNode)
                     };
                 }
@@ -566,20 +570,19 @@ var OpenMoji = {
 
             this.hide();
             if(element.caretSelection !== null){
-                let node = element.caretSelection.node;
+                if(this.converter.settings.verbose === "full") console.log("Using selection", element.caretSelection);
+                let node = document.getElementById(element.caretSelection.parentNodeId).childNodes[element.caretSelection.nodeIndex];
                 let offset = element.caretSelection.offset;
-                let parent = element.caretSelection.parent;
-                let nodeIndex = element.caretSelection.nodeIndex;
                 if(node.nodeName == '#text'){
-                    if(this.converter.settings.verbose === "full") console.log("inserting into a text node:", node, "(parent", parent, ", index", nodeIndex, "), at offset", offset);
-                    node = parent.childNodes[nodeIndex];
+                    if(this.converter.settings.verbose === "full") console.log("Inserting into text node", node, "at offset", offset);
+                    let parent = node.parentElement;
                     let value = node.textContent;
                     parent.insertBefore(document.createTextNode(value.substr(0, offset)), node);
                     parent.insertBefore(emojiElement, node);
                     parent.insertBefore(document.createTextNode(value.substr(offset)), node);
                     parent.removeChild(node);
                 }else{
-                    if(this.converter.settings.verbose === "full") console.log("inserting into a non-text node:", node, ", at offset", offset);
+                    if(this.converter.settings.verbose === "full") console.log("Inserting into non-text node", node, "at offset", offset);
                     node.insertBefore(emojiElement, node.childNodes[offset]);
                 }
             }else{
