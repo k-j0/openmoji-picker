@@ -3,6 +3,8 @@ A simple hassle-free vanilla JavaScript emoji picker that can be integrated to a
 
 Still in very early development phase, don't expect anything stable right now. Feel free to issue problems, or submit a pull request if you have time to implement something yourself.
 
+[View example page](https://jonathan-kings.com/openmoji-picker/)
+
 ## License information
 You are free to use this library for whatever project you want. However, I would like to kindly request you refrain from using it on websites that support racism, speciesism, violence, discrimination or harassment. Actually, just refrain from working on such websites entirely :)
 
