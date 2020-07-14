@@ -42,11 +42,15 @@ var OpenMoji = {
 
         /// Calls replaceAll on the string provided, ensuring the characters it replaces are followed by whitespaces (or the end of the string)
         static replaceCharsWhitespace(str, src, dst, allowColonJoiner = true){
-            str = str.replaceAll(src+" ", dst+" ").replaceAll(src+"\n", dst+"\n").replaceAll(src+"<", dst+"<");
+            let original = str;
+            str = str.replaceAll(src+" ", dst+" ").replaceAll(src+"\n", dst+"\n").replaceAll(src+"<", dst+"<").replaceAll(src+"&", dst+"&");
             if(allowColonJoiner)
                 str = str.replaceAll(src+":", dst+":");
             if(str.endsWith(src))
                 str = str.substr(0, str.length - src.length) + dst;
+            if(original !== str){ // keep replacing until nothing changes anymore
+                return OpenMoji.Utils.replaceCharsWhitespace(str, src, dst, allowColonJoiner);
+            }
             return str;
         }
 
@@ -120,14 +124,16 @@ var OpenMoji = {
                     // apply special rules
                     if(groupName == "food-drink" && emojiData.subgroups == "food-marine") groupName = "animals-nature"; // these fellas aren't food!
                     switch(groupName){
+                        case "smileys-emotion":
                         case "people-body":
                         case "component":
-                            groupName = "smileys-emotion";
+                            groupName = "smileys-people";
                             break;
                         case "extras-openmoji":
                         case "extras-unicode":
                             groupName = emojiData.subgroups;
                             switch(groupName){
+                                case "smileys-emotion": groupName = "smileys-people"; break;
                                 case "brand": groupName = "symbols"; break;
                                 case "climate-environment": groupName = "animals-nature"; break;
                                 case "emergency": groupName = "activities"; break;
@@ -161,7 +167,7 @@ var OpenMoji = {
                             case "objects":
                                 group.icon = "1F4A1"; // light bulb
                                 break;
-                            case "smileys-emotion":
+                            case "smileys-people":
                                 group.icon = "1F604"; // grinning face with smiling eyes
                                 break;
                             case "symbols":
@@ -253,9 +259,23 @@ var OpenMoji = {
             let classes = "openmoji" + (shorthand.includes('flag') ? " openmoji-smaller" : "");
             let additionalAttributes = (this.settings.scaleEmojis !== false ? "scaled" : "");
             let alt = this.settings.altAsShorthands === true ? shorthand : data.emoji;
-            return '<img class="'+classes+'" data-shorthand="'+shorthand+'" data-emojiindex="'+data.index+'" data-emoji="'+data.emoji+'" \
+            return '<img class="'+classes+'" data-shorthand="'+shorthand+'" data-emoji="'+data.emoji+'" \
                     src="' + this.getEmojiSvgPath(data.hexcode) + '" \
                     title="'+data.annotation+'" alt="'+alt+'" ' + additionalAttributes + '>';
+        }
+
+        /// Creates & returns an element identical to Converter::makeEmojiImage(), but as a html node element
+        makeEmojiImageNode(data){
+            let shorthand = this.getEmojiShorthand(data.annotation);
+            let img = document.createElement('img');
+            img.className = "openmoji" + (shorthand.includes('flag') ? " openmoji-smaller" : "");
+            if(this.settings.scaleEmojis !== false) img.setAttribute('scaled', '');
+            img.alt = this.settings.altAsShorthands === true ? shorthand : data.emoji;
+            img.setAttribute('data-shorthand', shorthand);
+            img.setAttribute('data-emoji', data.emoji);
+            img.src = this.getEmojiSvgPath(data.hexcode);
+            img.title = data.annotation;
+            return img;
         }
 
         /// Returns the shorthand notation of an emoji
@@ -266,7 +286,7 @@ var OpenMoji = {
         /// Converts emoticons in text to :shorthand-notation:
         emoticonsToShorthands(text){
             text = OpenMoji.Utils.replaceCharsWhitespaceAssoc(text, {
-                '&lt;3&lt;3&lt;3': ':sparkling-heart::sparkling-heart::sparkling-heart:',
+                '&lt;3&lt;3&lt;3': ':dizzy::sparkling-heart::sparkling-heart::sparkling-heart::dizzy:',
                 '&lt;3': ':red-heart:',
                 '&lt;/3': ':broken-heart:',
                 ':)': ':slightly-smiling-face:',
@@ -324,7 +344,6 @@ var OpenMoji = {
                     }
                     // replace emojis and :shorthands: in text
                     for(let i = data.length-1; i >= 0; --i){
-                        data[i].index = i;
                         let emoji = this.makeEmojiImage(data[i]);
                         let shorthand = this.getEmojiShorthand(data[i].annotation);
                         if(data[i].emoji !== null){
@@ -516,6 +535,9 @@ var OpenMoji = {
                     img.src = this.converter.getEmojiSvgPath(mainEmoji.hexcode);
                     img.className = 'openmoji-picker-emoji-button';
                     img.title = mainEmoji.annotation;
+                    img.addEventListener('click', () => {
+                        this.insertEmoji(this.converter.makeEmojiImageNode(mainEmoji));
+                    });
                     emojiContainer.appendChild(img);
                 });
             }
@@ -545,15 +567,6 @@ var OpenMoji = {
                         });
                     });
                 });
-            });
-
-            // test code
-            emojiContainer.addEventListener('click', () => {
-                let elem = document.createElement('img');
-                elem.className = 'openmoji';
-                elem.src = "openmoji/color/svg/1F43B-200D-2744-FE0F.svg";
-                elem.setAttribute('scaled', '');
-                this.insertEmoji(elem);
             });
 
             // build license disclaimer
