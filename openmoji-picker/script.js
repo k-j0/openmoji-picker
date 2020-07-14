@@ -55,6 +55,7 @@ var OpenMoji = {
          * - editableClassName: the html class to use on editable content; defaults to "openmoji-editable"
          * - pickerMixinClassName: the html class to use on elements where pickers should be inserted; defaults to "with-openmoji-picker"
          * - scaleEmojis: if true, openmojis will be slightly scaled up; defaults to true
+         * - verbose: if true, will log debug information to the console; can also be set to the string literal "full"; defaults to false
          */
         constructor(settings){
             settings = settings ?? {};
@@ -76,7 +77,16 @@ var OpenMoji = {
                 this.__data = JSON.parse(data);
                 // parse the data to divide into emoji groups
                 let groups = {};
-                this.__data.forEach((emojiData) => {
+                this.__data.forEach((emojiData, index) => {
+                    // catch emojis with duplicate annotations
+                    // @todo: for now only White Flag exists twice, but this could use sturdier/more flexible code
+                    if(emojiData.annotation === "white flag" && emojiData.tags != "waving"){
+                        emojiData.annotation = "flat white flag";
+                        emojiData.skintone_base_emoji = emojiData.emoji;
+                        emojiData.emoji = null; // unmap from emoji
+                        this.__data[index] = emojiData;
+                    }
+                    // Sort emojis into groups
                     let groupName = emojiData.group;
                     let baseEmoji = emojiData.skintone_base_emoji;
                     if(baseEmoji === "") baseEmoji = emojiData.emoji;
@@ -153,7 +163,7 @@ var OpenMoji = {
                     this.groups[group.index] = group;
                     delete group.index;
                 });
-                console.log("Loaded OpenMoji data", this.__data, "divided into groups", this.groups);
+                if(this.settings.verbose) console.log("Loaded OpenMoji data", this.__data, "divided into groups", this.groups);
             });
 
             /// Fired once DOM becomes interactable
@@ -259,6 +269,7 @@ var OpenMoji = {
         textToEmojis(element){
             this.emojisToText(element);
             let input = element.innerHTML;
+            if(this.settings.verbose === "full") console.log("Converting text to emoji:", input);
             if(element.tagName.toLowerCase() == "input"){
                 console.error("Cannot convert text to emojis within an <input> field; use contenteditable instead!");
                 return;
@@ -268,17 +279,20 @@ var OpenMoji = {
                     // replace emoticons by :shorthands: in text
                     if(this.settings.allowEmoticons !== false){
                         input = this.emoticonsToShorthands(input);
+                        if(this.settings.verbose === "full") console.log("After conversion to emoticons:", input);
                     }
                     // replace emojis and :shorthands: in text
                     for(let i = data.length-1; i >= 0; --i){
                         data[i].index = i;
                         let emoji = this.makeEmojiImage(data[i]);
                         let shorthand = this.getEmojiShorthand(data[i].annotation);
+                        if(data[i].emoji !== null)
+                            input = input.replaceAll(data[i].emoji, shorthand);
                         input = input.replaceAll(shorthand, emoji);
-                        input = input.replaceAll(data[i].emoji, emoji);
                     }
                     // replace content with new openmoji content
                     element.innerHTML = input;
+                    if(this.settings.verbose === "full") console.log("After conversion from shorthands and emoji:", input);
                     // replace shorthands with actual emojis in alt tags
                     if(this.settings.keepShorthands === false){
                         let emojisAdded = element.getElementsByClassName('openmoji');
@@ -286,6 +300,7 @@ var OpenMoji = {
                             emojisAdded[i].setAttribute('alt', data[emojisAdded[i].getAttribute('data-emojiindex')].emoji);
                         }
                     }
+                    if(this.settings.verbose === "full") console.log("Conversion finished:", element.innerHTML);
                     resolve(element.innerHTML);
                 });
             });
@@ -293,6 +308,7 @@ var OpenMoji = {
 
         /// Converts some text containing openmojis back to unicode or shorthand, depending on the settings applied
         emojisToText(element){
+            if(this.settings.verbose === "full") console.log("Converting emoji to text:", element.innerHTML);
             let emojis = element.getElementsByClassName('openmoji');
             let toDelete = [];
             for(let i = 0; i < emojis.length; ++i){
