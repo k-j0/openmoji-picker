@@ -40,6 +40,26 @@ var OpenMoji = {
             return false;
         }
 
+        /// Calls replaceAll on the string provided, ensuring the characters it replaces are followed by whitespaces (or the end of the string)
+        static replaceCharsWhitespace(str, src, dst, allowColonJoiner = true){
+            str = str.replaceAll(src+" ", dst+" ").replaceAll(src+"\n", dst+"\n").replaceAll(src+"<", dst+"<");
+            if(allowColonJoiner)
+                str = str.replaceAll(src+":", dst+":");
+            if(str.endsWith(src))
+                str = str.substr(0, str.length - src.length) + dst;
+            return str;
+        }
+
+        /// Calls replaceCharsWhitespace on all the values within an assoc array of the form
+        /// {src0:dst0, src1:dst1, ...}
+        static replaceCharsWhitespaceAssoc(str, assoc, allowColonJoiner = true){
+            Object.keys(assoc).forEach((key) => {
+                let val = assoc[key];
+                str = OpenMoji.Utils.replaceCharsWhitespace(str, key, val, allowColonJoiner);
+            });
+            return str;
+        }
+
     },// class Utils
 
     Converter : class{
@@ -50,7 +70,8 @@ var OpenMoji = {
          * - injectStyles: set to false to bypass loading css; only use if you're adding the stylesheet manually; defaults to true
          * - cssUrl: the path at which to find the stylesheet; defaults to "openmoji-picker/style.css"
          * - jsonUrl: the path at which to find the json file with all the data about the available openmoji emojis; defaults to "openmoji/data/openmoji.json"
-         * - keepShorthands: set to false to convert text back to unicode emojis when calling `emojisToText` or when users copy and paste text; defaults to true
+         * - altAsShorthands: set to true to set alt text to shorthand notations on emojis; false by default sets the alt attribute to unicode emojis
+         * - convertToShorthands: set to false to convert emoji in text to unicode emojis (might break some emojis such as :polar-bear: when reconverting!); true by default
          * - allowEmoticons: set to false to prevent converting emoticons like "<3" to openmoji; defaults to true
          * - baseEmojiUrl: the path at which to find all the different OpenMoji svg files, including trailing slash; defaults to "openmoji/color/svg/"
          * - baseBWEmojiUrl: the path at which to find all the different OpenMoji black/white svg files, including trailing slash; defaults to baseEmojiUrl+"/../../black/svg/"
@@ -226,9 +247,10 @@ var OpenMoji = {
             let shorthand = this.getEmojiShorthand(data.annotation);
             let classes = "openmoji" + (shorthand.includes('flag') ? " openmoji-smaller" : "");
             let additionalAttributes = (this.settings.scaleEmojis !== false ? "scaled" : "");
-            return '<img class="'+classes+'" data-shorthand="'+shorthand+'" data-emojiindex="'+data.index+'" \
+            let alt = this.settings.altAsShorthands === true ? shorthand : data.emoji;
+            return '<img class="'+classes+'" data-shorthand="'+shorthand+'" data-emojiindex="'+data.index+'" data-emoji="'+data.emoji+'" \
                     src="' + this.getEmojiSvgPath(data.hexcode) + '" \
-                    title="'+data.annotation+'" alt="'+shorthand+'" ' + additionalAttributes + '>';
+                    title="'+data.annotation+'" alt="'+alt+'" ' + additionalAttributes + '>';
         }
 
         /// Returns the shorthand notation of an emoji
@@ -238,48 +260,50 @@ var OpenMoji = {
 
         /// Converts emoticons in text to :shorthand-notation:
         emoticonsToShorthands(text){
-            text = text.replaceAll('&lt;3&lt;3&lt;3 ', ':sparkling-heart::sparkling-heart::sparkling-heart: ')
-                       .replaceAll('&lt;3 ', ':red-heart: ')
-                       .replaceAll('&lt;/3 ', ':broken-heart: ')
-                       .replaceAll(':) ', ':slightly-smiling-face: ')
-                       .replaceAll('=) ', ':slightly-smiling-face: ')
-                       .replaceAll(':* ', ':kissing-face-with-closed-eyes: ')
-                       .replaceAll(';* ', ':face-blowing-a-kiss: ')
-                       .replaceAll('^^ ', ':smiling-face-with-smiling-eyes: ')
-                       .replaceAll('^_^ ', ':smiling-face-with-smiling-eyes: ')
-                       .replaceAll(':D ', ':grinning-face-with-smiling-eyes: ')
-                       .replaceAll('=D ', ':grinning-face-with-smiling-eyes: ')
-                       .replaceAll('8) ', ':smiling-face-with-sunglasses: ')
-                       .replaceAll(';) ', ':winking-face: ')
-                       .replaceAll(':P ', ':face-savoring-food: ')
-                       .replaceAll(':p ', ':face-with-tongue: ')
-                       .replaceAll(';p ', ':winking-face-with-tongue: ')
-                       .replaceAll(':/ ', ':confused-face: ')
-                       .replaceAll('=/ ', ':confused-face: ')
-                       .replaceAll(':\\ ', ':confused-face: ')
-                       .replaceAll('=\\ ', ':confused-face: ')
-                       .replaceAll(':| ', ':neutral-face: ')
-                       .replaceAll('=| ', ':neutral-face: ')
-                       .replaceAll('-_- ', ':expressionless-face: ')
-                       .replaceAll(':o ', ':face-with-open-mouth: ')
-                       .replaceAll(':O ', ':exploding-head: ')
-                       .replaceAll(":'( ", ':crying-face: ')
-                       .replaceAll("='( ", ':crying-face: ')
-                       .replaceAll("&gt;:( ", ':pouting-face: ')
-                       .replaceAll("&gt;=( ", ':pouting-face: ')
-                       .replaceAll(':( ', ':frowning-face: ')
-                       .replaceAll('=( ', ':frowning-face: ')
-                       .replaceAll(')D&gt;- ', ':tongue::victory-hand: ')
-                       .replaceAll(':o) ', ':clown-face: ')
-                       .replaceAll('=o) ', ':clown-face: ')
-                       .replaceAll('(: ', ':upside-down-face: ')
-                       .replaceAll('(= ', ':upside-down-face: ');
+            text = OpenMoji.Utils.replaceCharsWhitespaceAssoc(text, {
+                '&lt;3&lt;3&lt;3': ':sparkling-heart::sparkling-heart::sparkling-heart:',
+                '&lt;3': ':red-heart:',
+                '&lt;/3': ':broken-heart:',
+                ':)': ':slightly-smiling-face:',
+                '=)': ':slightly-smiling-face:',
+                ':*': ':kissing-face-with-closed-eyes:',
+                ';*': ':face-blowing-a-kiss:',
+                '^^': ':smiling-face-with-smiling-eyes:',
+                '^_^': ':smiling-face-with-smiling-eyes:',
+                ':D': ':grinning-face-with-smiling-eyes:',
+                '=D': ':grinning-face-with-smiling-eyes: ',
+                '8)': ':smiling-face-with-sunglasses:',
+                ';)': ':winking-face:',
+                ':P': ':face-savoring-food:',
+                ':p': ':face-with-tongue:',
+                ';p': ':winking-face-with-tongue:',
+                ':/': ':confused-face:',
+                '=/': ':confused-face:',
+                ':\\': ':confused-face:',
+                '=\\': ':confused-face:',
+                ':|': ':neutral-face:',
+                '=|': ':neutral-face:',
+                '-_-': ':expressionless-face:',
+                ':o': ':face-with-open-mouth:',
+                ':O': ':exploding-head:',
+                ":'(": ':crying-face:',
+                "='(": ':crying-face:',
+                "&gt;:(": ':pouting-face:',
+                "&gt;=(": ':pouting-face:',
+                ':(': ':frowning-face:',
+                '=(': ':frowning-face:',
+                ')D&gt;-': ':tongue::victory-hand:',
+                ':o)': ':clown-face:',
+                '=o)': ':clown-face:',
+                '(:': ':upside-down-face:',
+                '(=': ':upside-down-face:'
+            }, false);
             return text;
         }
 
         /// Converts some text containing unicode emojis or :shorthand-notations: to use svgs from openmoji instead
         textToEmojis(element){
-            this.emojisToText(element);
+            //this.emojisToText(element);
             let input = element.innerHTML;
             if(this.settings.verbose === "full") console.log("Converting text to emoji:", input);
             if(element.tagName.toLowerCase() == "input"){
@@ -298,22 +322,15 @@ var OpenMoji = {
                         data[i].index = i;
                         let emoji = this.makeEmojiImage(data[i]);
                         let shorthand = this.getEmojiShorthand(data[i].annotation);
-                        if(data[i].emoji !== null)
-                            input = input.replaceAll(data[i].emoji, shorthand);
-                        input = input.replaceAll(shorthand, emoji);
+                        if(data[i].emoji !== null){
+                            input = OpenMoji.Utils.replaceCharsWhitespace(input, data[i].emoji, shorthand);
+                        }
+                        input = OpenMoji.Utils.replaceCharsWhitespace(input, shorthand, emoji);
                     }
+                    if(this.settings.verbose === "full") console.log("After conversion from shorthands and emoji:", input);
                     // replace content with new openmoji content
                     element.innerHTML = input;
-                    if(this.settings.verbose === "full") console.log("After conversion from shorthands and emoji:", input);
-                    // replace shorthands with actual emojis in alt tags
-                    if(this.settings.keepShorthands === false){
-                        let emojisAdded = element.getElementsByClassName('openmoji');
-                        for(let i = 0; i < emojisAdded.length; ++i){
-                            emojisAdded[i].setAttribute('alt', data[emojisAdded[i].getAttribute('data-emojiindex')].emoji);
-                        }
-                    }
-                    if(this.settings.verbose === "full") console.log("Conversion finished:", element.innerHTML);
-                    resolve(element.innerHTML);
+                    resolve(input);
                 });
             });
         }
@@ -326,7 +343,11 @@ var OpenMoji = {
             for(let i = 0; i < emojis.length; ++i){
                 let placeholder = document.createElement('span');
                 emojis[i].parentNode.insertBefore(placeholder, emojis[i]);
-                placeholder.replaceWith(emojis[i].getAttribute('alt'));
+                if(this.settings.convertToShorthands === false){
+                    placeholder.replaceWith(emojis[i].getAttribute('data-emoji'));
+                }else{
+                    placeholder.replaceWith(emojis[i].getAttribute('data-shorthand'));
+                }
                 toDelete.push(emojis[i]);
             }
             for(let i = toDelete.length - 1; i >= 0; --i){
@@ -337,21 +358,22 @@ var OpenMoji = {
 
         /// Adds openmoji support to the element; anytime it changes, textToEmojis will be called for it
         bindReadonly(element){
-            this.textToEmojis(element);
-            let observe = (observer) => {
-                observer.observe(element, {
-                    subtree: true,
-                    childList: true
+            this.textToEmojis(element).then(() => {
+                let observe = (observer) => {
+                    observer.observe(element, {
+                        subtree: true,
+                        childList: true
+                    });
+                };
+                let observer = new MutationObserver(() => {
+                    observer.disconnect();
+                    if(this.settings.verbose === "full") console.log("Updating openmoji-readonly contents for", element);
+                    this.textToEmojis(element).then(() => {
+                        observe(observer);
+                    });
                 });
-            };
-            let observer = new MutationObserver(() => {
-                observer.disconnect();
-                if(this.settings.verbose === "full") console.log("Updating openmoji-readonly contents for", element);
-                this.textToEmojis(element).then(() => {
-                    observe(observer);
-                });
+                observe(observer);
             });
-            observe(observer);
         }
 
         /// Makes the element editable (with support for openmoji)
