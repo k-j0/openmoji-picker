@@ -4,6 +4,23 @@
 var OpenMoji = {
 
     Utils : class{
+
+        /// Sets up functions that are required for compatibility in browsers that don't provide support
+        static setCompatibilityFunctions(){
+            if(OpenMoji.Utils.compatibilityFunctionsSetup === true) return;
+            OpenMoji.Utils.compatibilityFunctionsSetup = true;
+
+            // Mutation observer
+            MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+
+            // Ensure support for string.replaceAll
+            if(!String.prototype.replaceAll){
+                String.prototype.replaceAll = function(src, dst){
+                    return this.split(src).join(dst);
+                }
+            }
+        }
+
         /// Ensures the callback function is called, either immediately or once the DOM becomes interactable
         static whenReady(callback){
             if(document.readyState === "complete" || document.readyState === "interactive") {
@@ -31,6 +48,7 @@ var OpenMoji = {
 
         /// Returns whether the child node is nested within the parent node
         static isDescendant(child, parent){
+            if(child === null || child === undefined) return false;
             if(child === parent) return true;
             var node = child.parentNode;
             while(node){
@@ -86,16 +104,16 @@ var OpenMoji = {
          * - verbose: if true, will log debug information to the console; can also be set to the string literal "full"; defaults to false
          */
         constructor(settings){
-            settings = settings ?? {};
+            settings = settings || {};
 
             this.settings = settings;
 
             // Features needed to ensure proper functionality
-            MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+            OpenMoji.Utils.setCompatibilityFunctions();
 
             /// Inject openmoji styles to <head>
             if(settings.injectStyles !== false){
-                OpenMoji.Utils.get(settings.cssUrl ?? 'openmoji-picker/style.css').then((css) => {
+                OpenMoji.Utils.get(settings.cssUrl || 'openmoji-picker/style.css').then((css) => {
                     let head = document.getElementsByTagName('head')[0];
                     let style = document.createElement('style');
                     style.innerHTML = css;
@@ -104,7 +122,7 @@ var OpenMoji = {
             }
 
             /// Load OpenMoji data file
-            this.__futureData = OpenMoji.Utils.get(settings.jsonUrl ?? 'openmoji/data/openmoji.json').then((data) => {
+            this.__futureData = OpenMoji.Utils.get(settings.jsonUrl || 'openmoji/data/openmoji.json').then((data) => {
                 this.__data = JSON.parse(data);
                 // parse the data to divide into emoji groups
                 let groups = {};
@@ -208,19 +226,19 @@ var OpenMoji = {
             OpenMoji.Utils.whenReady(() => {
 
                 /// Look for any openmoji-readonly elements and set up events on them
-                let readonlys = document.getElementsByClassName(settings.readonlyClassName ?? 'openmoji-readonly');
+                let readonlys = document.getElementsByClassName(settings.readonlyClassName || 'openmoji-readonly');
                 [...readonlys].forEach(readonly => {
                     this.bindReadonly(readonly);
                 });
 
                 /// Look for any openmoji-editable elements and instantiate them as editable openmoji fields
-                let editables = document.getElementsByClassName(settings.editableClassName ?? 'openmoji-editable');
+                let editables = document.getElementsByClassName(settings.editableClassName || 'openmoji-editable');
                 [...editables].forEach(editable => {
                     this.bindEditable(editable);
                 });
 
                 /// Add picker elements to any DOM nodes with class with-openmoji-picker
-                let pickers = document.getElementsByClassName(settings.pickerMixinClassName ?? 'with-openmoji-picker');
+                let pickers = document.getElementsByClassName(settings.pickerMixinClassName || 'with-openmoji-picker');
                 [...pickers].forEach(picker => {
                     this.bindPickerButton(picker);
                 });
@@ -242,7 +260,7 @@ var OpenMoji = {
 
         /// Returns the SVG path for an openmoji given its hexcode
         getEmojiSvgPath(hexcode, colour = true){
-            let basePath = this.settings.baseEmojiUrl ?? "openmoji/color/svg/";
+            let basePath = this.settings.baseEmojiUrl || "openmoji/color/svg/";
             if(!colour){
                 if(this.settings.baseBWEmojiUrl == undefined){
                     basePath = basePath + "../../black/svg/";
@@ -623,30 +641,33 @@ var OpenMoji = {
             if(element.caretSelection !== null){
                 if(this.converter.settings.verbose === "full") console.log("Using selection", element.caretSelection);
                 let node = document.getElementById(element.caretSelection.parentNodeId).childNodes[element.caretSelection.nodeIndex];
-                let offset = element.caretSelection.offset;
-                if(node.nodeName == '#text'){
-                    if(this.converter.settings.verbose === "full") console.log("Inserting into text node", node, "at offset", offset);
-                    let parent = node.parentElement;
-                    let value = node.textContent;
-                    parent.insertBefore(document.createTextNode(value.substr(0, offset)), node);
-                    parent.insertBefore(emojiElement, node);
-                    parent.insertBefore(document.createTextNode(value.substr(offset)), node);
-                    parent.removeChild(node);
-                }else{
-                    if(this.converter.settings.verbose === "full") console.log("Inserting into non-text node", node, "at offset", offset);
-                    node.insertBefore(emojiElement, node.childNodes[offset]);
+                if(node){
+                    let offset = element.caretSelection.offset;
+                    if(node.nodeName == '#text'){
+                        if(this.converter.settings.verbose === "full") console.log("Inserting into text node", node, "at offset", offset);
+                        let parent = node.parentElement;
+                        let value = node.textContent;
+                        parent.insertBefore(document.createTextNode(value.substr(0, offset)), node);
+                        parent.insertBefore(emojiElement, node);
+                        parent.insertBefore(document.createTextNode(value.substr(offset)), node);
+                        parent.removeChild(node);
+                    }else{
+                        if(this.converter.settings.verbose === "full") console.log("Inserting into non-text node", node, "at offset", offset);
+                        node.insertBefore(emojiElement, node.childNodes[offset]);
+                        ++element.caretSelection.offset;
+                    }
+                    return;
                 }
-            }else{
-                // no selection available for the element, insert at the very end
-                let finalNode = element;
-                if(element.childNodes.length > 0 && element.childNodes[element.childNodes.length - 1].nodeName.toLowerCase() == "div"){
-                    finalNode = element.childNodes[element.childNodes.length - 1];
-                }
-                // ensure we don't insert on a new line (contenteditable will insert <br> tag upon pressing space)
-                if(finalNode.innerHTML.endsWith('<br>')) finalNode.innerHTML = finalNode.innerHTML.substr(0, finalNode.innerHTML.length - '<br>'.length);
-                else if(finalNode.innerHTML.endsWith('<br/>')) finalNode.innerHTML = finalNode.innerHTML.substr(0, finalNode.innerHTML.length - '<br/>'.length);
-                finalNode.innerHTML += emojiElement.outerHTML;
             }
+            // no selection available for the element, insert at the very end
+            let finalNode = element;
+            if(element.childNodes.length > 0 && element.childNodes[element.childNodes.length - 1].nodeName.toLowerCase() == "div"){
+                finalNode = element.childNodes[element.childNodes.length - 1];
+            }
+            // ensure we don't insert on a new line (contenteditable will insert <br> tag upon pressing space)
+            if(finalNode.innerHTML.endsWith('<br>')) finalNode.innerHTML = finalNode.innerHTML.substr(0, finalNode.innerHTML.length - '<br>'.length);
+            else if(finalNode.innerHTML.endsWith('<br/>')) finalNode.innerHTML = finalNode.innerHTML.substr(0, finalNode.innerHTML.length - '<br/>'.length);
+            finalNode.innerHTML += emojiElement.outerHTML;
         }
 
     }// class Picker

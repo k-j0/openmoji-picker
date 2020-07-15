@@ -18,6 +18,9 @@
     border-width: 1px;
     position: relative;
 }
+.openmoji-editable *{
+    outline: none;
+}
 
 .openmoji-editable.with-openmoji-picker{
     padding-right: 1.8em;
