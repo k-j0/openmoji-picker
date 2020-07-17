@@ -11,10 +11,11 @@ You are free to use this library for whatever project you want. However, I would
 Remember to attribute and link to [OpenMoji](https://openmoji.org/). The picker already contains a link to the OpenMoji CC BY-SA 4.0 license, but the contributors who worked hard on the project probably deserve another, flashier, mention somewhere else on the website you're building.
 
 ## Roadmap
-+ Implement search functionality in emoji picker
++ Implement spritesheets instead of individual SVGs for increased performance
 + Support selecting different skin tone variants from the picker
++ Optimize loading times by baking+formatting data ahead of time
 + Better organization of the emojis in the various categories
-+ Transition to the OpenMoji font rather than individual SVGs for better performance once it becomes supported on major browsers
++ Transition to the OpenMoji font rather than SVGs/sprites for better performance once it becomes supported on major browsers
 + Provide server-side scripts for validation/conversion of strings containing emojis
 + Release picker as a package for the different frontend frameworks
 

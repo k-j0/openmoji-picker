@@ -161,10 +161,15 @@
 }
 
 .openmoji-picker-categories{
-    height: 2em;
+    height: calc(2em + 4px);
     margin-top: 0.3em;
     display: flex;
     justify-content: space-between;
+    overflow: hidden;
+    transition: 0.3s;
+}
+[in-search] .openmoji-picker-categories{
+    height: 0;
 }
 
 .openmoji-picker-category-button{
@@ -211,7 +216,7 @@
 }
 
 .openmoji-picker-emoji-container{
-    height: calc(100% - 5.8em);
+    height: calc(100% - 5.8em - 4px);
     margin-top: 6px;
     overflow-y: scroll;
     -ms-overflow-style: none;
@@ -222,9 +227,11 @@
     grid-row-gap: 0.2em;
     grid-column-gap: 0.2em;
     width: 100%;
-    align-content: space-between;
     justify-content: space-between;
-    place-content: space-between;
+    transition: 0.3s;
+}
+[in-search] .openmoji-picker-emoji-container{
+    height: calc(100% - 3.8em);
 }
 .openmoji-picker-emoji-container::-webkit-scrollbar{
     display: none;

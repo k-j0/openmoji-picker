@@ -301,6 +301,34 @@ var OpenMoji = {
             return ':' + annotation.toLowerCase().replaceAll(' ', '-').replaceAll(':', '') + ':';
         }
 
+        /// Searches through all emojis and returns those that fit a particular search term
+        searchEmojis(searchTerm){
+            return new Promise((resolve, reject) => {
+                if(searchTerm.length < 2) resolve([]);
+                else{
+                    searchTerm = searchTerm.toLowerCase();
+                    this.getData().then(() => {
+                        let skintoneGroupResults = [];
+                        this.groups.forEach((group) => {
+                            group.emojis.forEach((skintoneGroup) => {
+                                let mainEmoji = skintoneGroup[0];
+                                if(mainEmoji.annotation.toLowerCase().includes(searchTerm) ||
+                                   mainEmoji.emoji.includes(searchTerm) ||
+                                   mainEmoji.group.toLowerCase().includes(searchTerm) ||
+                                   mainEmoji.openmoji_author.toLowerCase().includes(searchTerm) ||
+                                   mainEmoji.openmoji_tags.toLowerCase().includes(searchTerm) ||
+                                   mainEmoji.subgroups.toLowerCase().includes(searchTerm) ||
+                                   mainEmoji.tags.toLowerCase().includes(searchTerm)){
+                                    skintoneGroupResults.push(skintoneGroup);
+                                }
+                            });
+                        });
+                        resolve(skintoneGroupResults);
+                    });
+                }
+            });
+        }
+
         /// Converts emoticons in text to :shorthand-notation:
         emoticonsToShorthands(text){
             text = OpenMoji.Utils.replaceCharsWhitespaceAssoc(text, {
@@ -522,33 +550,24 @@ var OpenMoji = {
             this.hide();
             originNode.appendChild(this.pickerElem);
 
-            // build top container (search icon and input)
+            // populate panel
             let top = document.createElement('div');
-            this.pickerElem.appendChild(top);
-            top.className = 'openmoji-picker-top';
-            top.title = "Search for emoji by name";
-            OpenMoji.Utils.get(converter.getEmojiSvgPath('1F50E', false)).then((response) => {
-                top.innerHTML = response;// search icon as svg node
-                let input = document.createElement('input');
-                top.appendChild(input);
-                input.setAttribute('type', 'text');
-                input.setAttribute('placeholder', 'Search emoji');
-            });
-
-            // build category tabs & emoji div
             let categories = document.createElement('div');
             let emojiContainer = document.createElement('div');
+            let disclaimer = document.createElement('div');
+            this.pickerElem.appendChild(top);
             this.pickerElem.appendChild(categories);
             this.pickerElem.appendChild(emojiContainer);
+            this.pickerElem.appendChild(disclaimer);
+            
+            // build category tabs & emoji div
             categories.className = 'openmoji-picker-categories';
             emojiContainer.className = 'openmoji-picker-emoji-container';
-            let selectCategory = (categoryButton, group) => {
-                categoryButton.setAttribute('selected', '');
-                // display emojis to select from
-                emojiContainer.innerHTML = "";
-                emojiContainer.scrollTop = 0;
-                group.emojis.forEach((skintones) => {
-                    let mainEmoji = skintones[0];
+            let currentCategoryButton = null;
+            let currentCategoryGroup = null;
+            let displayEmojis = (skintoneGroups) => {
+                skintoneGroups.forEach((skintoneGroup) => {
+                    let mainEmoji = skintoneGroup[0];
                     let img = document.createElement('img');
                     img.src = this.converter.getEmojiSvgPath(mainEmoji.hexcode);
                     img.className = 'openmoji-picker-emoji-button';
@@ -559,10 +578,21 @@ var OpenMoji = {
                     });
                     emojiContainer.appendChild(img);
                 });
-            }
+            };
+            let selectCategory = (categoryButton = null, group = null) => {
+                if(categoryButton === null) categoryButton = currentCategoryButton;
+                if(group === null) group = currentCategoryGroup;
+                currentCategoryButton = categoryButton;
+                currentCategoryGroup = group;
+                categoryButton.setAttribute('selected', '');
+                // display emojis to select from
+                emojiContainer.innerHTML = "";
+                emojiContainer.scrollTop = 0;
+                displayEmojis(group.emojis);
+            };
             let unselectCategory = (categoryButton) => {
                 categoryButton.removeAttribute('selected');
-            }
+            };
             converter.groups.forEach((group, index) => {
                 let tabButton = document.createElement('div');
                 categories.appendChild(tabButton);
@@ -588,9 +618,37 @@ var OpenMoji = {
                 });
             });
 
+            // build top container (search icon and input)
+            top.className = 'openmoji-picker-top';
+            top.title = "Search for emoji by name";
+            OpenMoji.Utils.get(converter.getEmojiSvgPath('1F50E', false)).then((response) => {
+                top.innerHTML = response;// search icon as svg node
+                let input = document.createElement('input');
+                top.appendChild(input);
+                input.setAttribute('type', 'text');
+                input.setAttribute('placeholder', 'Search emoji');
+                input.addEventListener('click', e => {
+                    input.setSelectionRange(0, input.value.length);
+                });
+                input.addEventListener('input', e => {
+                    let searchTerm = input.value;
+                    if(searchTerm.length <= 0){
+                        // show default view, no search results
+                        this.pickerElem.removeAttribute('in-search');
+                        selectCategory();
+                    }else{
+                        // show custom search results view; hide categories
+                        this.pickerElem.setAttribute('in-search', '');
+                        emojiContainer.innerHTML = "";
+                        emojiContainer.scrollTop = 0;
+                        this.converter.searchEmojis(searchTerm).then((results) => {
+                            displayEmojis(results);
+                        });
+                    }
+                });
+            });
+
             // build license disclaimer
-            let disclaimer = document.createElement('div');
-            this.pickerElem.appendChild(disclaimer);
             disclaimer.className = "openmoji-picker-disclaimer";
             disclaimer.innerHTML = "Uses <a href='https://openmoji.org/'>OpenMoji</a> under <a href='https://creativecommons.org/licenses/by-sa/4.0/'>CC BY-SA 4.0</a> | ⚑ <a href='https://github.com/k-j0/openmoji-picker/issues/'>Report issues</a>";
 
