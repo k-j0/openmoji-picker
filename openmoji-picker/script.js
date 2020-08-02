@@ -101,6 +101,10 @@ var OpenMoji = {
          * - editableClassName: the html class to use to find editable content; defaults to "openmoji-editable"
          * - pickerMixinClassName: the html class to use to find elements where pickers should be inserted; defaults to "with-openmoji-picker"
          * - scaleEmojis: if true, openmojis will be slightly scaled up; defaults to true
+         * - useSprites: if true, will load all OpenMojis as one big spritesheet and skip loading additional SVGs for every single emoji; defaults to true
+         * - spriteCssUrl: the relative path to the sprite stylesheet; defaults to "sprites/openmoji-sprite-styles.css"
+         * - spriteSvgUrl: the relative path to the spritesheet SVG; defaults to "sprites/openmoji-spritesheet.svg"
+         * - spriteBaseClass: the base CSS class to use for sprites; defaults to "openmoji-sprite"
          * - verbose: if true, will log debug information to the console; can also be set to the string literal "full"; defaults to false
          */
         constructor(settings){
@@ -117,6 +121,15 @@ var OpenMoji = {
                     let head = document.getElementsByTagName('head')[0];
                     let style = document.createElement('style');
                     style.innerHTML = css;
+                    head.appendChild(style);
+                });
+            }
+            if(settings.useSprites !== false){
+                OpenMoji.Utils.get(settings.spriteCssUrl || 'sprites/openmoji-sprite-styles.css').then((css) => {
+                    let head = document.getElementsByTagName('head')[0];
+                    let style = document.createElement('style');
+                    style.innerHTML = css.replaceAll('$b', settings.spriteBaseClass || 'openmoji-sprite')
+                                         .replaceAll('$s', 'url(' + (settings.spriteSvgUrl || 'sprites/openmoji-spritesheet.svg') + ')');
                     head.appendChild(style);
                 });
             }

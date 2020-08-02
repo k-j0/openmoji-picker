@@ -46,11 +46,22 @@ new OpenMoji.Converter({
 |`allowEmoticons`|`true` or `false`|`true`|If `true`, emoticons such as `<3` or `:)` will be converted to OpenMoji elements, similarly to `:red-heart:`.|
 |`baseEmojiUrl`|path string literal|`"openmoji/color/svg/"`|The relative or absolute path to the colour OpenMoji SVG folder (from the OpenMoji repository).|
 |`baseBWEmojiUrl`|path string literal|`"openmoji/black/svg/"`|The relative or absolute path to the black and white OpenMoji SVG folder (from the OpenMoji repository).|
-|`readonlyClassName`|HTML class name|`"openmoji-readonly"`|The class that is used to find readonly elements on the page.|
-|`editableClassName`|HTML class name|`"openmoji-editable"`|The class that is used to find editable elements on the page.|
-|`pickerMixinClassName`|HTML class name|`"with-openmoji-picker"`|The class that is used to find elements on the page that should be assigned an emoji picker.|
+|`readonlyClassName`|CSS class name|`"openmoji-readonly"`|The class that is used to find readonly elements on the page.|
+|`editableClassName`|CSS class name|`"openmoji-editable"`|The class that is used to find editable elements on the page.|
+|`pickerMixinClassName`|CSS class name|`"with-openmoji-picker"`|The class that is used to find elements on the page that should be assigned an emoji picker.|
 |`scaleEmojis`|`true` or `false`|`true`|OpenMojis are slightly smaller than native emojis, so this setting causes all OpenMoji elements to be scaled up slightly.|
+|`useSprites`|`true` or `false`|`true`|Whether to render all emojis as sprites from an SVG spritesheet; see Generating sprites section below.|
+|`spriteCssUrl`|path string literal|`sprites/openmoji-sprite-styles.css`|The path to the sprite stylesheet; used only when `useSprites` is set.|
+|`spriteSvgUrl`|path string literal|`sprites/openmoji-spritesheet.svg`|The path to the SVG spritesheet; used only when `useSprites` is set.|
+|`spriteBaseClass`|CSS class name|`openmoji-sprite`|The base class name for all sprite emojis; used only when `useSprites` is set. Note that modifying this would also require modifying the main stylesheet [style.css](openmoji-picker/style.css)|
 |`verbose`|`true`, `false` or `"full"`|`false`|`true` outputs a small amount of runtime information about the status of the OpenMoji picker; `false` only logs errors; `"full"` outputs an insane amount of information.|
 
 This library is still in very early stage, so no complete documentation has been written just yet unfortunately. Hopefully the inline documentation is enough to get started :)
 
+## Generating sprites
+If using the spritesheet rendering functionalities, you'll need the generated SVG/CSS spritesheet, provided for convenience under [sprites](sprites). However, you can use the following set of commands to regenerate a fresh version of both (Windows only for now; sorry!).
+```shell
+npm i
+cd sprites && generate
+```
+Note that this assumes the [OpenMoji repository](https://github.com/hfg-gmuend/openmoji) to be available as a sibling directory to `/sprites`, under the name `/openmoji`. If using a different folder structure, feel free to edit [sprites/generate.bat](sprites/generate.bat) to account for that.

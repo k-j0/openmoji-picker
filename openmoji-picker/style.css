@@ -10,6 +10,14 @@
     transform: translateY(0.2em) scale(1.05);
 }
 
+
+.openmoji-sprite{
+    display: inline-block;
+    width: 1em;
+    background-size: 100% auto !important;
+}
+
+
 .openmoji-editable{
     padding: 0.2em 0.4em;
     line-height: 1.2em;
