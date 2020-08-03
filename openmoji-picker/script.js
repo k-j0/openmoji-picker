@@ -581,15 +581,21 @@ var OpenMoji = {
             let displayEmojis = (skintoneGroups) => {
                 skintoneGroups.forEach((skintoneGroup) => {
                     let mainEmoji = skintoneGroup[0];
-                    let img = document.createElement('img');
-                    img.src = this.converter.getEmojiSvgPath(mainEmoji.hexcode);
-                    img.className = 'openmoji-picker-emoji-button';
-                    img.title = mainEmoji.annotation;
-                    img.alt = mainEmoji.annotation;
-                    img.addEventListener('click', () => {
+                    let emojiButton = null;
+                    if(converter.settings.useSprites !== false){
+                        emojiButton = document.createElement('span');
+                        emojiButton.className = "openmoji-sprite x" + mainEmoji.hexcode;
+                    }else{
+                        emojiButton = document.createElement('img');
+                        emojiButton.src = this.converter.getEmojiSvgPath(mainEmoji.hexcode);
+                    }
+                    emojiButton.classList.add('openmoji-picker-emoji-button');
+                    emojiButton.title = mainEmoji.annotation;
+                    emojiButton.alt = mainEmoji.annotation;
+                    emojiButton.addEventListener('click', () => {
                         this.insertEmoji(this.converter.makeEmojiImageNode(mainEmoji));
                     });
-                    emojiContainer.appendChild(img);
+                    emojiContainer.appendChild(emojiButton);
                 });
             };
             let selectCategory = (categoryButton = null, group = null) => {
